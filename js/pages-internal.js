@@ -9,8 +9,8 @@ function internalStageBadge(app) {
   const st = INTERNAL_STAGES[app.stage];
   if (app.rejected) return '<span class="badge badge-danger">' + Icon("x", 11) + ' Rejected</span>';
   if (app.gate && app.gate.decision === "passed" && app.stage >= 7) return '<span class="badge badge-success">' + Icon("shield", 11) + ' Gate Passed · Unlocked</span>';
-  if (app.needsRevision) return '<span class="badge badge-warning">' + Icon("alert", 11) + ' ' + st.name + ' · Revision</span>';
-  return '<span class="badge badge-indigo">' + Icon("clock", 11) + ' ' + st.name + '</span>';
+  if (app.needsRevision) return '<span class="badge badge-warning">' + Icon("alert", 11) + ' ' + esc(st.name) + ' · Revision</span>';
+  return '<span class="badge badge-indigo">' + Icon("clock", 11) + ' ' + esc(st.name) + '</span>';
 }
 
 /* ---------------- DASHBOARD ---------------- */
@@ -39,7 +39,7 @@ function internalDashboard() {
     const o = Store.getOpportunity(app.opportunityId);
     return '<div class="list-row">' +
       startupLogo(s, 34) +
-      '<div class="lr-main"><div class="semibold" style="font-size:13.5px">' + s.name + '</div><div class="tiny faint">' + (o ? o.title : "") + ' · gated ' + app.gate.decidedAt + '</div></div>' +
+      '<div class="lr-main"><div class="semibold" style="font-size:13.5px">' + esc(s.name) + '</div><div class="tiny faint">' + (o ? esc(o.title) : "") + ' · gated ' + app.gate.decidedAt + '</div></div>' +
       '<span class="badge badge-success">' + Icon("shield", 11) + ' PASSED</span>' +
       '<button class="btn btn-ghost btn-sm" onclick="App.navigate(\'#/internal/application/' + app.id + '\')">' + Icon("eye", 13) + 'Open</button>' +
     '</div>';
@@ -75,8 +75,8 @@ function appRow(app) {
   const o = Store.getOpportunity(app.opportunityId);
   return '<div class="list-row">' +
     startupLogo(s, 34) +
-    '<div class="lr-main"><div class="semibold" style="font-size:13.5px">' + s.name + ' <span class="faint" style="font-weight:500">· ' + s.founder.name + '</span></div>' +
-    '<div class="tiny faint">' + (o ? o.title + ' · ' + o.org : "") + '</div></div>' +
+    '<div class="lr-main"><div class="semibold" style="font-size:13.5px">' + esc(s.name) + ' <span class="faint" style="font-weight:500">· ' + esc(s.founder.name) + '</span></div>' +
+    '<div class="tiny faint">' + (o ? esc(o.title) + ' · ' + esc(o.org) : "") + '</div></div>' +
     internalStageBadge(app) +
     '<button class="btn btn-soft btn-sm" onclick="App.navigate(\'#/internal/application/' + app.id + '\')">' + Icon("eye", 13) + 'Review</button>' +
   '</div>';
@@ -127,7 +127,7 @@ function internalApplicationReview(id) {
       : i === app.stage ? '<span class="badge badge-indigo g-flag">' + Icon("clock", 10) + ' NOW</span>' : "";
     return '<div class="gate-step ' + st + '" style="min-width:150px">' +
       '<div class="g-ic">' + (i < app.stage ? Icon("check", 18) : Icon(g.icon, 18)) + '</div>' +
-      '<div class="g-num">STAGE ' + (i + 1) + '</div><div class="g-name">' + g.name + '</div><div class="g-sub">' + g.group + '</div>' + flag + '</div>';
+      '<div class="g-num">STAGE ' + (i + 1) + '</div><div class="g-name">' + esc(g.name) + '</div><div class="g-sub">' + g.group + '</div>' + flag + '</div>';
   }).join("");
 
   // automated checks
@@ -159,7 +159,7 @@ function internalApplicationReview(id) {
     '<div style="padding:14px 16px;border-radius:14px;background:rgba(255,255,255,.55);border:1px solid var(--hairline);margin-bottom:10px">' +
       '<div class="row-between" style="flex-wrap:wrap;gap:8px;margin-bottom:8px">' +
         '<div class="row" style="gap:10px"><span class="card-title-ic ' + (e.status === "Verified" ? "green" : e.status === "Needs clarification" ? "amber" : "blue") + '" style="width:30px;height:30px">' + Icon(e.status === "Verified" ? "verify" : e.status === "Needs clarification" ? "alert" : "clock", 14) + '</span>' +
-        '<div><div class="semibold small">' + e.type + '</div><div class="tiny faint">' + e.description + '</div></div></div>' +
+        '<div><div class="semibold small">' + esc(e.type) + '</div><div class="tiny faint">' + esc(e.description) + '</div></div></div>' +
         '<select class="select" style="width:190px" id="ev-' + i + '-status">' +
           '<option value="Verified"' + ((((app.evidenceStatus && app.evidenceStatus[e.type]) || e.status) === "Verified") ? " selected" : "") + '>Verified</option>' +
           '<option value="Needs clarification"' + ((((app.evidenceStatus && app.evidenceStatus[e.type]) || e.status) === "Needs clarification") ? " selected" : "") + '>Needs clarification</option>' +
@@ -185,13 +185,13 @@ function internalApplicationReview(id) {
     '<div class="glass-strong card" style="padding:24px;margin-bottom:18px">' +
       '<div class="row-between" style="flex-wrap:wrap;gap:14px">' +
         '<div class="row" style="gap:15px">' + startupLogo(s, 50) +
-          '<div><div class="row" style="gap:9px"><span style="font-size:19px;font-weight:800">' + s.name + '</span>' + internalStageBadge(app) + '</div>' +
-          '<div class="small muted" style="margin-top:3px">Founder: <b>' + s.founder.name + '</b> · ' + s.founder.college + '</div>' +
-          '<div class="small muted">Applying to: <b style="color:var(--ink)">' + (opp ? opp.title : "—") + '</b> · ' + (opp ? opp.org : "") + '</div></div>' +
+          '<div><div class="row" style="gap:9px"><span style="font-size:19px;font-weight:800">' + esc(s.name) + '</span>' + internalStageBadge(app) + '</div>' +
+          '<div class="small muted" style="margin-top:3px">Founder: <b>' + esc(s.founder.name) + '</b> · ' + esc(s.founder.college) + '</div>' +
+          '<div class="small muted">Applying to: <b style="color:var(--ink)">' + (opp ? esc(opp.title) : "—") + '</b> · ' + (opp ? esc(opp.org) : "") + '</div></div>' +
         '</div>' +
         '<div style="text-align:right"><div class="tiny faint semibold" style="letter-spacing:.08em">CURRENT STAGE</div>' +
-        '<div class="semibold" style="font-size:17px;color:var(--accent-deep)">' + stage.name + '</div>' +
-        '<div class="tiny faint" style="margin-top:2px">Submitted ' + app.submitted + ' · Stage ' + (app.stage + 1) + '/' + INTERNAL_STAGES.length + '</div>' +
+        '<div class="semibold" style="font-size:17px;color:var(--accent-deep)">' + esc(stage.name) + '</div>' +
+        '<div class="tiny faint" style="margin-top:2px">Submitted ' + app.submitted + ' · Stage ' + (esc(app.stage) + 1) + '/' + INTERNAL_STAGES.length + '</div>' +
         '<div class="tiny faint">Version ' + (app.currentVersion || 1) + ' · ' + Math.max(0, Math.floor((Date.now() - lifecycle.submittedAt.getTime()) / 86400000)) + ' days in review</div>' +
         '<div class="tiny faint">Founder status: <b style="color:var(--ink)">' + appStatus.label + '</b></div></div>' +
       '</div>' +
@@ -199,7 +199,7 @@ function internalApplicationReview(id) {
 
     '<div class="gate-timeline" style="margin-bottom:20px">' + rail + '</div>' +
 
-    '<div class="glass card" style="margin-bottom:18px"><div class="card-header"><div class="h3"><span class="card-title-ic violet">' + Icon("file", 17) + '</span>Application versions</div>' + (app.versions && app.versions.length ? '<span class="badge badge-indigo">Latest v' + (app.currentVersion || 1) + '</span>' : '<span class="badge badge-neutral">No snapshot</span>') + '</div><div class="col" style="gap:7px">' + (app.versions && app.versions.length ? app.versions.map(v => '<div class="product-row"><div class="product-row-main"><b>Version ' + v.version + '</b><div class="tiny faint">' + new Date(v.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) + ' · Updated by ' + v.updatedBy + '</div></div>' + (v.version === app.currentVersion ? '<span class="badge badge-success">Latest</span>' : '') + '</div>').join("") : '<p class="muted small">Submitted document unavailable for this legacy application.</p>') + '</div></div>' +
+    '<div class="glass card" style="margin-bottom:18px"><div class="card-header"><div class="h3"><span class="card-title-ic violet">' + Icon("file", 17) + '</span>Application versions</div>' + (app.versions && app.versions.length ? '<span class="badge badge-indigo">Latest v' + (app.currentVersion || 1) + '</span>' : '<span class="badge badge-neutral">No snapshot</span>') + '</div><div class="col" style="gap:7px">' + (app.versions && app.versions.length ? app.versions.map(v => '<div class="product-row"><div class="product-row-main"><b>Version ' + v.version + '</b><div class="tiny faint">' + new Date(v.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) + ' · Updated by ' + esc(v.updatedBy) + '</div></div>' + (v.version === app.currentVersion ? '<span class="badge badge-success">Latest</span>' : '') + '</div>').join("") : '<p class="muted small">Submitted document unavailable for this legacy application.</p>') + '</div></div>' +
 
     '<div class="stack">' +
 
@@ -289,7 +289,7 @@ function internalApplicationReview(id) {
           '<button class="btn btn-danger btn-lg" onclick="App.intGateDecision(\'' + app.id + '\', false)">' + Icon("x", 16) + 'Quality Gate Not Passed</button>' +
         '</div>' +
         (app.stage >= 7
-          ? '<div class="status-banner success"><span class="sb-ic">' + Icon("eye", 20) + '</span><div><b>Unlocked for investor / incubator review</b><p>This application is now visible to ' + (opp ? opp.org : "the relevant investor") + '.</p></div></div>'
+          ? '<div class="status-banner success"><span class="sb-ic">' + Icon("eye", 20) + '</span><div><b>Unlocked for investor / incubator review</b><p>This application is now visible to ' + (opp ? esc(opp.org) : "the relevant investor") + '.</p></div></div>'
           : gate.decision === "passed"
             ? '<button class="btn btn-primary btn-lg btn-block" onclick="App.intUnlock(\'' + app.id + '\')">' + Icon("eye", 16) + 'Unlock for Investor / Incubator Review</button>'
             : '<p class="tiny faint">' + Icon("lock", 11) + ' The application stays confidential until the gate is passed and unlocked.</p>') +
@@ -315,7 +315,7 @@ function submittedWorkspaceDocument(id, versionNo) {
   const lockDate = new Date(app.submittedAt || selected.submittedAt);
   lockDate.setDate(lockDate.getDate() + 10);
   return '<div class="page-head"><div><a href="#/internal/application/' + app.id + '" class="small semibold" style="color:var(--accent-deep)">' + Icon("chevL", 13) + ' Back to application review</a><h1 class="h1" style="margin-top:10px">Submitted Idea Workspace</h1><p class="sub">The exact application snapshot submitted to Venture Connect.</p></div><span class="badge badge-indigo">Version ' + selected.version + '</span></div>' +
-    '<div class="document-layout"><aside class="solid-panel card version-panel"><div class="tiny faint semibold" style="letter-spacing:.08em">VERSION HISTORY</div><div class="version-list">' + versionLinks + '</div></aside><main class="glass-strong card submitted-document"><div class="document-meta"><div><b>' + s.name + '</b><span>' + s.founder.name + ' · ' + (o ? o.title : "Application") + '</span></div><div><span>Submitted ' + new Date(selected.submittedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) + '</span><span>Last updated ' + new Date(selected.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) + '</span><span>Lock date ' + lockDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) + '</span></div></div><div class="submitted-fields">' + fields + '</div></main></div>';
+    '<div class="document-layout"><aside class="solid-panel card version-panel"><div class="tiny faint semibold" style="letter-spacing:.08em">VERSION HISTORY</div><div class="version-list">' + versionLinks + '</div></aside><main class="glass-strong card submitted-document"><div class="document-meta"><div><b>' + esc(s.name) + '</b><span>' + esc(s.founder.name) + ' · ' + (o ? esc(o.title) : "Application") + '</span></div><div><span>Submitted ' + new Date(selected.submittedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) + '</span><span>Last updated ' + new Date(selected.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) + '</span><span>Lock date ' + lockDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) + '</span></div></div><div class="submitted-fields">' + fields + '</div></main></div>';
 }
 
 /* Build a workspace-like object from a startup for the check engine */

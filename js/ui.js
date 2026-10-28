@@ -56,6 +56,12 @@ const ICONS = {
   video: '<polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/>'
 };
 
+/* ---- HTML escaping (every user-controlled value that goes into markup must pass through this) ---- */
+function esc(v) {
+  return v == null ? "" : String(v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+function escapeHtml(v) { return esc(v); }
+
 function Icon(name, size) {
   const p = ICONS[name] || ICONS.info;
   size = size || 18;
@@ -85,7 +91,13 @@ function toast(msg, type, iconName) {
   const root = document.getElementById("toast-root");
   const t = document.createElement("div");
   t.className = "toast " + type;
-  t.innerHTML = '<span class="t-ic">' + Icon(ic, 16) + '</span><span>' + msg + '</span>';
+  const icSpan = document.createElement("span");
+  icSpan.className = "t-ic";
+  icSpan.innerHTML = Icon(ic, 16);
+  const msgSpan = document.createElement("span");
+  msgSpan.textContent = msg;   // never markup: messages can contain user-supplied names
+  t.appendChild(icSpan);
+  t.appendChild(msgSpan);
   root.appendChild(t);
   setTimeout(() => { t.classList.add("out"); setTimeout(() => t.remove(), 320); }, 3200);
 }
@@ -156,11 +168,11 @@ function evidenceBadge(st) {
 
 /* ---- avatars / logos ---- */
 function initials(name) {
-  return name.split(/\s+/).slice(0, 2).map(w => w[0]).join("").toUpperCase();
+  return esc(String(name || "").split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join("").toUpperCase());
 }
 function startupLogo(s, size) {
   size = size || 46;
-  return '<div class="sc-logo" style="width:' + size + 'px;height:' + size + 'px;border-radius:' + Math.round(size * 0.3) + 'px;background:' + s.logo + ';font-size:' + Math.round(size * 0.38) + 'px">' + initials(s.name) + '</div>';
+  return '<div class="sc-logo" style="width:' + size + 'px;height:' + size + 'px;border-radius:' + Math.round(size * 0.3) + 'px;background:' + esc(s.logo) + ';font-size:' + Math.round(size * 0.38) + 'px">' + initials(s.name) + '</div>';
 }
 function personAvatar(name, size) {
   size = size || 40;

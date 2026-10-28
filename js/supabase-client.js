@@ -11,20 +11,56 @@ const sb = window.supabase.createClient(
 
 const DB = (() => {
 
+  let recoveryPending = false;
+  const recoveryCallbacks = [];
+  // Must stay synchronous and must not call other supabase methods (it runs inside the auth lock).
+  sb.auth.onAuthStateChange((event) => {
+    if (event === "PASSWORD_RECOVERY") { recoveryPending = true; recoveryCallbacks.forEach(cb => { try { cb(); } catch (e) { console.error(e); } }); }
+  });
+
   /* ---------------- auth ---------------- */
 
-  async function signUp(email, password, role, profileFields) {
-    const { data, error } = await sb.auth.signUp({ email, password });
+  // The profile (and, for founders, the first startup) is created inside the
+  // database by the on_auth_user_created trigger from this metadata, so signup
+  // works even when "Confirm email" is on and no session exists yet.
+  async function signUp(email, password, role, profileFields, startup) {
+    const meta = Object.assign({}, profileFields || {}, { role });
+    if (startup) meta.startup = startup;
+    const { data, error } = await sb.auth.signUp({ email, password, options: { data: meta } });
     if (error) return { ok: false, err: error.message };
     const uid = data.user && data.user.id;
-    if (!uid) {
-      // Email confirmation is on: no session/user id yet.
-      return { ok: false, err: "Check your inbox to confirm your email, then log in." };
+    if (!uid || !data.session) {
+      // Email confirmation is on: the account exists but there is no session yet.
+      return { ok: true, needsConfirmation: true };
     }
-    const row = Object.assign({ id: uid, email, role }, profileFields || {});
-    const { error: perr } = await sb.from("profiles").insert(row);
-    if (perr) return { ok: false, err: perr.message };
-    return { ok: true, userId: uid };
+    let profile = await fetchProfile(uid);
+    if (!profile) {
+      // Fallback for a database that has not run supabase/hardening.sql yet.
+      const row = Object.assign({ id: uid, email, role }, profileFields || {});
+      const { error: perr } = await sb.from("profiles").insert(row);
+      if (perr) return { ok: false, err: perr.message };
+      profile = await fetchProfile(uid);
+    }
+    return { ok: true, userId: uid, profile };
+  }
+
+  async function resetPassword(email) {
+    const redirectTo = window.location.origin + window.location.pathname;
+    const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo });
+    return error ? { ok: false, err: error.message } : { ok: true };
+  }
+
+  async function updatePassword(password) {
+    const { error } = await sb.auth.updateUser({ password });
+    return error ? { ok: false, err: error.message } : { ok: true };
+  }
+
+  // supabase-js fires PASSWORD_RECOVERY while it is still initialising (it reads the
+  // recovery link from the URL), which can be before the app has booted. The listener is
+  // therefore registered at load time (below) and remembers the event for late subscribers.
+  function onPasswordRecovery(cb) {
+    recoveryCallbacks.push(cb);
+    if (recoveryPending) cb();
   }
 
   async function signIn(email, password) {
@@ -66,8 +102,25 @@ const DB = (() => {
   }
 
   // Passed-gate startups visible on the discovery marketplace (investor/incubator side).
-  async function fetchVisibleStartups() {
-    const { data, error } = await sb.from("startups").select("*").eq("quality_gate", "passed");
+  // Internal reviewers need every startup, because they review ones that have not passed yet.
+  async function fetchVisibleStartups(role) {
+    let q = sb.from("startups").select("*");
+    if (role !== "internal") q = q.eq("quality_gate", "passed");
+    const { data, error } = await q;
+    if (error) throw error;
+    return data || [];
+  }
+
+  // Founder name / college / bio for marketplace startups (view; passed gate only).
+  async function fetchMarketplaceFounders() {
+    const { data, error } = await sb.from("marketplace_founders").select("*");
+    if (error) { console.warn("marketplace_founders unavailable (run supabase/hardening.sql):", error.message); return []; }
+    return data || [];
+  }
+
+  // Internal reviewers can read founder profiles directly.
+  async function fetchFounderProfiles() {
+    const { data, error } = await sb.from("profiles").select("id,name,college,location,bio,skills,socials").eq("role", "founder");
     if (error) throw error;
     return data || [];
   }
@@ -99,6 +152,16 @@ const DB = (() => {
     return data;
   }
 
+  async function incrementOpportunityViews(id) {
+    const { error } = await sb.rpc("increment_opportunity_views", { p_id: id });
+    if (error) throw error;
+  }
+  async function recordApplicationClick(id) {
+    const { data, error } = await sb.rpc("record_application_click", { p_id: id });
+    if (error) throw error;
+    return data;
+  }
+
   async function updateOpportunity(id, patch) {
     const { data, error } = await sb.from("opportunities").update(patch).eq("id", id).select().maybeSingle();
     if (error) throw error;
@@ -107,9 +170,15 @@ const DB = (() => {
 
   /* ---------------- applications ---------------- */
 
-  async function fetchApplications() {
-    // RLS scopes this to: your own startup's applications, applications to
-    // your opportunities that have been unlocked, or all of them if internal.
+  async function fetchApplications(role) {
+    // Founders and internal reviewers read the table (RLS: own startup's rows, or all).
+    // Organizations read org_applications instead: unlocked applications to their
+    // own opportunities only, with the internal review notes left out.
+    if (role === "investor" || role === "incubator" || role === "organizer") {
+      const v = await sb.from("org_applications").select("*").order("submitted_at", { ascending: false });
+      if (!v.error) return v.data || [];
+      console.warn("org_applications unavailable (run supabase/hardening.sql):", v.error.message);
+    }
     const { data, error } = await sb.from("applications").select("*").order("submitted_at", { ascending: false });
     if (error) throw error;
     return data || [];
@@ -171,10 +240,13 @@ const DB = (() => {
     return internalUpdateApplication(id, { clarification: { status: "requested", question: question || "Please clarify the submitted information.", response: "", requestedAt: new Date().toISOString() } });
   }
 
-  // Org/investor-only, permitted by applications_update_opportunity_owner_investor_action.
+  // Org/investor-only: server-side RPC checks the opportunity is theirs and the application is unlocked.
   async function rejectApplicationInvestor(id) {
-    const { data, error } = await sb.from("applications").update({ investor_action: "rejected" }).eq("id", id).select().maybeSingle();
+    const { data: ok, error } = await sb.rpc("reject_application_investor", { p_app_id: id });
     if (error) throw error;
+    if (!ok) return null;
+    const { data, error: rerr } = await sb.from("org_applications").select("*").eq("id", id).maybeSingle();
+    if (rerr) throw rerr;
     return data;
   }
 
@@ -210,13 +282,25 @@ const DB = (() => {
 
   /* ---------------- messages ---------------- */
 
-  async function fetchMessages(startupId) {
-    const { data, error } = await sb.from("messages").select("*").eq("startup_id", startupId).order("created_at", { ascending: true });
+  // Accepts one startup id or an array. RLS decides which threads come back: an
+  // investor/incubator gets only their own thread, a founder gets every thread on their startups.
+  async function fetchMessages(startupIds) {
+    const ids = Array.isArray(startupIds) ? startupIds : [startupIds];
+    if (!ids.length) return [];
+    const { data, error } = await sb.from("messages").select("*").in("startup_id", ids).order("created_at", { ascending: true });
     if (error) throw error;
     return data || [];
   }
-  async function sendMessage(startupId, senderId, body) {
-    const { data, error } = await sb.from("messages").insert({ startup_id: startupId, sender_id: senderId, body }).select().single();
+  // Display name / organisation of the people who marked a founder's startups as interesting.
+  async function fetchThreadParticipants() {
+    const { data, error } = await sb.from("thread_participants").select("*");
+    if (error) { console.warn("thread_participants unavailable (run supabase/hardening.sql):", error.message); return []; }
+    return data || [];
+  }
+  // participantId = the investor/incubator side of the thread. Investors pass their own id;
+  // a founder replying passes the id of the participant they are answering.
+  async function sendMessage(startupId, senderId, participantId, body) {
+    const { data, error } = await sb.from("messages").insert({ startup_id: startupId, sender_id: senderId, participant_id: participantId, body }).select().single();
     if (error) throw error;
     return data;
   }
@@ -234,12 +318,12 @@ const DB = (() => {
   }
 
   return {
-    signUp, signIn, signOut, getSessionProfile, fetchProfile, updateProfile,
-    fetchMyStartups, fetchVisibleStartups, createStartup, updateStartup,
-    fetchOpportunities, createOpportunity, updateOpportunity,
+    signUp, signIn, signOut, getSessionProfile, fetchProfile, updateProfile, resetPassword, updatePassword, onPasswordRecovery,
+    fetchMyStartups, fetchVisibleStartups, fetchMarketplaceFounders, fetchFounderProfiles, createStartup, updateStartup,
+    fetchOpportunities, createOpportunity, updateOpportunity, incrementOpportunityViews, recordApplicationClick,
     fetchApplications, createApplication, updateApplicationSnapshot, respondClarification,
     internalUpdateApplication, advanceApplication, setApplicationGate, unlockApplication, rejectApplication, requestClarification, rejectApplicationInvestor,
     fetchSaved, addSaved, removeSaved, fetchInterested, addInterested, removeInterested,
-    fetchMessages, sendMessage, fetchNotifications, markNotificationsRead
+    fetchMessages, fetchThreadParticipants, sendMessage, fetchNotifications, markNotificationsRead
   };
 })();

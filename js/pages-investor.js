@@ -18,19 +18,19 @@ function startupCard(s, opts) {
     '<div class="sc-top">' +
       startupLogo(s, 46) +
       '<div style="flex:1;min-width:0">' +
-        '<div class="sc-name">' + s.name + (opts.rec ? ' <span class="badge badge-violet" style="padding:2px 8px">' + Icon("star", 10) + ' Recommended</span>' : '') + '</div>' +
-        '<div class="sc-tag">' + s.tagline + '</div>' +
+        '<div class="sc-name">' + esc(s.name) + (opts.rec ? ' <span class="badge badge-violet" style="padding:2px 8px">' + Icon("star", 10) + ' Recommended</span>' : '') + '</div>' +
+        '<div class="sc-tag">' + esc(s.tagline) + '</div>' +
       '</div>' +
     '</div>' +
     '<div class="row-wrap">' +
-      '<span class="tag">' + s.sector + '</span><span class="tag">' + s.stage + '</span>' +
-      '<span class="tag">' + Icon("mapPin", 11) + ' ' + s.location.split(",")[0] + '</span>' +
+      '<span class="tag">' + esc(s.sector) + '</span><span class="tag">' + esc(s.stage) + '</span>' +
+      '<span class="tag">' + Icon("mapPin", 11) + ' ' + esc(String(s.location || "").split(",")[0]) + '</span>' +
       gateBadge(s.qualityGate) +
     '</div>' +
     '<div class="sc-meta">' +
       '<span>' + Icon("trending", 12) + ' Readiness <b>' + s.score + '/100</b></span>' +
       '<span>' + Icon("verify", 12) + ' Validation <b>' + (s.evidence.some(e => e.status === "Verified") ? "Verified" : "In review") + '</b></span>' +
-      '<span>' + Icon("wallet", 12) + ' Seeking <b>' + s.fundingAsk + '</b></span>' +
+      '<span>' + Icon("wallet", 12) + ' Seeking <b>' + esc(s.fundingAsk) + '</b></span>' +
       '<span>' + Icon("calendar", 12) + ' Submitted <b>' + fmtDate(s.submitted) + '</b></span>' +
     '</div>' +
     '<div class="sc-actions">' +
@@ -74,7 +74,7 @@ function investorDashboard() {
   ];
 
   const oppRows = myOpps.slice(0, 3).map(o =>
-    '<div class="list-row"><div class="lr-main"><div class="semibold" style="font-size:13.5px">' + o.title + '</div>' +
+    '<div class="list-row"><div class="lr-main"><div class="semibold" style="font-size:13.5px">' + esc(o.title) + '</div>' +
     '<div class="tiny faint">' + Store.oppApplicationCount(o.id) + ' applications · ' + Store.oppQualifiedCount(o.id) + ' qualified</div></div>' +
     (o.status === "published" ? '<span class="badge badge-success">' + Icon("check", 11) + ' Published</span>' : o.status === "draft" ? '<span class="badge badge-neutral">Draft</span>' : '<span class="badge badge-neutral">Closed</span>') +
     '</div>'
@@ -86,8 +86,8 @@ function investorDashboard() {
     const saved = Store.isSaved(s.id);
     const interested = Store.isInterested(s.id);
     return '<div class="list-row">' + startupLogo(s, 34) +
-      '<div class="lr-main"><div class="semibold" style="font-size:13.5px">' + s.name + ' <span class="faint" style="font-weight:500">· ' + o.title + '</span></div>' +
-      '<div class="tiny faint">' + s.founder.name + ' · Gate passed ' + app.gate.decidedAt + '</div></div>' +
+      '<div class="lr-main"><div class="semibold" style="font-size:13.5px">' + esc(s.name) + ' <span class="faint" style="font-weight:500">· ' + esc(o.title) + '</span></div>' +
+      '<div class="tiny faint">' + esc(s.founder.name) + ' · Gate passed ' + app.gate.decidedAt + '</div></div>' +
       '<button class="btn btn-ghost btn-sm" onclick="App.toggleInterested(\'' + s.id + '\', this)">' + Icon("heart", 13) + (interested ? "Interested" : "Interested") + '</button>' +
       '<button class="btn btn-soft btn-sm" onclick="App.navigate(\'#/' + Store.getRole() + '/startup/' + s.id + '\')">' + Icon("eye", 13) + 'Review</button>' +
     '</div>';
@@ -194,8 +194,8 @@ function investorReview(id) {
 
   const html =
     '<div class="page-head">' +
-      '<div><h1 class="h1">' + s.name + '</h1>' +
-      '<p class="sub">' + s.tagline + ' · ' + s.sector + ' · ' + s.stage + ' · ' + s.location + '</p></div>' +
+      '<div><h1 class="h1">' + esc(s.name) + '</h1>' +
+      '<p class="sub">' + esc(s.tagline) + ' · ' + esc(s.sector) + ' · ' + esc(s.stage) + ' · ' + esc(s.location) + '</p></div>' +
       '<div class="row">' +
         '<button class="btn ' + (interested ? "btn-danger" : "btn-ghost") + '" onclick="App.toggleInterested(\'' + s.id + '\', this)">' + Icon("heart", 15) + 'Interested</button>' +
         '<button class="btn ' + (saved ? "btn-success" : "btn-ghost") + '" onclick="App.toggleSaved(\'' + s.id + '\', this)">' + Icon("bookmark", 15) + (saved ? "Saved" : "Save") + '</button>' +
@@ -207,9 +207,9 @@ function investorReview(id) {
       '<div class="row-between" style="flex-wrap:wrap;gap:14px">' +
         '<div class="row" style="gap:16px">' + startupLogo(s, 54) +
           '<div>' +
-            '<div class="row" style="gap:8px"><span style="font-size:20px;font-weight:800">' + s.name + '</span>' + gateBadge(s.qualityGate) + '</div>' +
-            '<div class="small muted" style="margin-top:3px">Founder: <b style="color:var(--ink)">' + s.founder.name + '</b> · ' + s.founder.college + '</div>' +
-            '<div class="small muted">Industry: ' + s.sector + ' · Stage: ' + s.stage + ' · Location: ' + s.location + '</div>' +
+            '<div class="row" style="gap:8px"><span style="font-size:20px;font-weight:800">' + esc(s.name) + '</span>' + gateBadge(s.qualityGate) + '</div>' +
+            '<div class="small muted" style="margin-top:3px">Founder: <b style="color:var(--ink)">' + esc(s.founder.name) + '</b> · ' + esc(s.founder.college) + '</div>' +
+            '<div class="small muted">Industry: ' + esc(s.sector) + ' · Stage: ' + esc(s.stage) + ' · Location: ' + esc(s.location) + '</div>' +
           '</div>' +
         '</div>' +
         '<div style="text-align:right"><div class="tiny faint semibold" style="letter-spacing:.08em">VC READINESS</div>' +
@@ -246,13 +246,13 @@ function investorReview(id) {
           '<div class="glass card">' +
             '<div class="card-header"><div class="h3"><span class="card-title-ic green">' + Icon("verify", 17) + '</span>Verified evidence</div></div>' +
             '<div class="col" style="gap:9px">' + s.evidence.map(e =>
-              '<div class="row" style="gap:10px;align-items:flex-start"><span class="badge badge-success" style="padding:2px 8px;margin-top:1px">' + Icon("check", 10) + '</span><span class="small" style="line-height:1.5"><b>' + e.type + '</b> — ' + e.description + '</span></div>'
+              '<div class="row" style="gap:10px;align-items:flex-start"><span class="badge badge-success" style="padding:2px 8px;margin-top:1px">' + Icon("check", 10) + '</span><span class="small" style="line-height:1.5"><b>' + esc(e.type) + '</b> — ' + esc(e.description) + '</span></div>'
             ).join("") + '</div>' +
           '</div>' +
 
           '<div class="glass card">' +
             '<div class="card-header"><div class="h3"><span class="card-title-ic amber">' + Icon("wallet", 17) + '</span>Funding ask &amp; use</div></div>' +
-            '<div class="kv"><dt>Funding ask</dt><dd>' + s.fundingAsk + '</dd><dt>Use of funds</dt><dd style="font-weight:500;line-height:1.55">' + s.useOfFunds + '</dd><dt>Team</dt><dd style="font-weight:500;line-height:1.55">' + s.team.map(t => t.name + ' — ' + t.role).join("; ") + '</dd></div>' +
+            '<div class="kv"><dt>Funding ask</dt><dd>' + esc(s.fundingAsk) + '</dd><dt>Use of funds</dt><dd style="font-weight:500;line-height:1.55">' + esc(s.useOfFunds) + '</dd><dt>Team</dt><dd style="font-weight:500;line-height:1.55">' + s.team.map(t => t.name + ' — ' + t.role).join("; ") + '</dd></div>' +
           '</div>' +
         '</div>' +
       '</div>' +
@@ -260,7 +260,7 @@ function investorReview(id) {
       '<div class="glass card">' +
         '<div class="card-header"><div class="h3"><span class="card-title-ic blue">' + Icon("layers", 17) + '</span>Milestones</div></div>' +
         '<div class="row-wrap">' + s.milestones.map(m =>
-          '<span class="badge ' + (m.done ? "badge-success" : "badge-neutral") + '">' + Icon(m.done ? "check" : "circle", 11) + ' ' + m.name + '</span>'
+          '<span class="badge ' + (m.done ? "badge-success" : "badge-neutral") + '">' + Icon(m.done ? "check" : "circle", 11) + ' ' + esc(m.name) + '</span>'
         ).join("") + '</div>' +
       '</div>' +
     '</div>';
@@ -288,9 +288,9 @@ function investorQueue() {
     const interested = Store.isInterested(s.id);
     return '<div class="queue-row fade-up">' +
       '<div class="qr-name" style="cursor:pointer" onclick="App.navigate(\'#/' + Store.getRole() + '/startup/' + s.id + '\')">' + startupLogo(s, 36) +
-        '<span>' + s.name + '<small>' + s.tagline + '</small></span></div>' +
-      '<div class="qr-cell qr-hide-sm">' + s.sector + '</div>' +
-      '<div class="qr-cell qr-hide-md">' + s.stage + '</div>' +
+        '<span>' + esc(s.name) + '<small>' + esc(s.tagline) + '</small></span></div>' +
+      '<div class="qr-cell qr-hide-sm">' + esc(s.sector) + '</div>' +
+      '<div class="qr-cell qr-hide-md">' + esc(s.stage) + '</div>' +
       '<div class="qr-cell">' + gateBadge(s.qualityGate) + '</div>' +
       '<div class="qr-cell mono bold" style="color:var(--accent-deep)">' + s.score + '</div>' +
       '<div class="qr-cell qr-hide-sm faint">' + fmtDate(s.submitted) + '</div>' +
@@ -331,13 +331,13 @@ function investorInterested() {
     '<div class="glass card glass-hover fade-up" style="padding:20px">' +
       '<div class="row-between" style="gap:14px;flex-wrap:wrap">' +
         '<div class="row" style="gap:14px">' + startupLogo(s, 44) +
-          '<div><div class="semibold" style="font-size:15.5px">' + s.name + ' <span class="badge badge-success" style="margin-left:4px">' + Icon("shield", 10) + ' PASSED</span></div>' +
-          '<div class="small muted">' + s.founder.name + ' · ' + s.sector + ' · ' + s.stage + '</div>' +
+          '<div><div class="semibold" style="font-size:15.5px">' + esc(s.name) + ' <span class="badge badge-success" style="margin-left:4px">' + Icon("shield", 10) + ' PASSED</span></div>' +
+          '<div class="small muted">' + esc(s.founder.name) + ' · ' + esc(s.sector) + ' · ' + esc(s.stage) + '</div>' +
           '<div class="tiny faint" style="margin-top:2px">Last activity: ' + s.lastActivity + '</div></div>' +
         '</div>' +
         '<div class="row" style="gap:18px">' +
           '<div style="text-align:center"><div class="tiny faint semibold">READINESS</div><div class="semibold mono" style="color:var(--accent-deep)">' + s.score + '</div></div>' +
-          '<div style="text-align:center"><div class="tiny faint semibold">ASK</div><div class="semibold mono">' + s.fundingAsk + '</div></div>' +
+          '<div style="text-align:center"><div class="tiny faint semibold">ASK</div><div class="semibold mono">' + esc(s.fundingAsk) + '</div></div>' +
         '</div>' +
       '</div>' +
       '<div class="row" style="margin-top:16px">' +
@@ -384,8 +384,8 @@ function investorOpportunities() {
 
   const rows = opps.map(o =>
     '<div class="list-row">' +
-      '<div class="lr-main"><div class="semibold" style="font-size:14px">' + o.title + '</div>' +
-      '<div class="tiny faint">' + o.org + ' · Deadline ' + o.deadline + ' · ' + o.views + ' views</div></div>' +
+      '<div class="lr-main"><div class="semibold" style="font-size:14px">' + esc(o.title) + '</div>' +
+      '<div class="tiny faint">' + esc(o.org) + ' · Deadline ' + esc(o.deadline) + ' · ' + o.views + ' views</div></div>' +
       (o.applicationMode === "external" ? '<div class="lr-cell">' + (o.applicationLinkClicks || 0) + ' link clicks</div>' :
         '<div class="lr-cell">' + Store.oppApplicationCount(o.id) + ' apps</div>' +
         '<div class="lr-cell">' + Store.oppQualifiedCount(o.id) + ' qualified</div>' +
@@ -434,7 +434,7 @@ function opportunityFormPage(id) {
   const typeVal = o ? (OPP_TYPES.find(t => t[1] === o.category) || [o.category, o.category])[0] : "Incubator Program";
   const isHackathon = typeVal === "Hackathon";
 
-  const selectOptions = (arr, cur) => arr.map(x => '<option value="' + x + '"' + (x === cur ? " selected" : "") + '>' + x + '</option>').join("");
+  const selectOptions = (arr, cur) => arr.map(x => '<option value="' + esc(x) + '"' + (x === cur ? " selected" : "") + '>' + esc(x) + '</option>').join("");
 
   const html =
     '<div class="page-head">' +
@@ -507,8 +507,8 @@ function investorApplications(oppId) {
     const saved = Store.isSaved(s.id);
     const interested = Store.isInterested(s.id);
     return '<div class="list-row">' + startupLogo(s, 36) +
-      '<div class="lr-main"><div class="semibold" style="font-size:14px">' + s.name + ' <span class="faint" style="font-weight:500">· ' + s.founder.name + '</span></div>' +
-      '<div class="tiny faint">' + (o ? o.title : "") + ' · Applied ' + app.submitted + ' · Gate passed ' + app.gate.decidedAt + '</div></div>' +
+      '<div class="lr-main"><div class="semibold" style="font-size:14px">' + esc(s.name) + ' <span class="faint" style="font-weight:500">· ' + esc(s.founder.name) + '</span></div>' +
+      '<div class="tiny faint">' + (o ? esc(o.title) : "") + ' · Applied ' + app.submitted + ' · Gate passed ' + app.gate.decidedAt + '</div></div>' +
       '<div class="lr-cell mono bold" style="color:var(--accent-deep)">' + s.score + '</div>' +
       '<button class="btn btn-ghost btn-sm" onclick="App.toggleSaved(\'' + s.id + '\', this)">' + Icon("bookmark", 13) + (saved ? "Saved" : "Save") + '</button>' +
       '<button class="btn ' + (interested ? "btn-danger" : "btn-ghost") + ' btn-sm" onclick="App.toggleInterested(\'' + s.id + '\', this)">' + Icon("heart", 13) + (interested ? "Interested" : "Interested") + '</button>' +
@@ -523,7 +523,7 @@ function investorApplications(oppId) {
       '<span class="badge badge-success">' + Icon("shield", 12) + ' ' + apps.length + ' qualified</span>' +
     '</div>' +
     '<div class="row-wrap" style="margin-bottom:18px">' + chips.map(c =>
-      '<button class="chip' + (invAppFilter === c[0] ? " active" : "") + '" onclick="App.invAppFilter(\'' + c[0] + '\')">' + c[1] + '</button>'
+      '<button class="chip' + (invAppFilter === c[0] ? " active" : "") + '" onclick="App.invAppFilter(\'' + esc(c[0]) + '\')">' + esc(c[1]) + '</button>'
     ).join("") + '</div>' +
     (rows
       ? '<div class="glass" style="padding:12px 10px"><div class="col" style="gap:10px">' + rows + '</div>' +
@@ -563,14 +563,14 @@ function incubatorDashboard() {
     '<div class="glass-strong card" style="padding:24px;margin-bottom:20px">' +
       '<div class="row-between" style="flex-wrap:wrap;gap:14px">' +
         '<div class="row" style="gap:15px"><span class="card-title-ic violet" style="width:48px;height:48px">' + Icon("layers", 21) + '</span>' +
-          '<div><div style="font-size:19px;font-weight:800">' + inc.org + '</div>' +
-          '<div class="small muted">' + inc.orgType + ' · ' + inc.location + '</div></div></div>' +
+          '<div><div style="font-size:19px;font-weight:800">' + esc(inc.org) + '</div>' +
+          '<div class="small muted">' + esc(inc.orgType) + ' · ' + esc(inc.location) + '</div></div></div>' +
         '<div class="row" style="gap:18px;flex-wrap:wrap">' +
           '<div style="text-align:center"><div class="tiny faint semibold">FOCUS AREAS</div><div class="semibold small" style="margin-top:2px">' + (inc.sectors || []).join(", ") + '</div></div>' +
           '<div style="text-align:center"><div class="tiny faint semibold">STAGES</div><div class="semibold small" style="margin-top:2px">' + (inc.stages || []).join(", ") + '</div></div>' +
         '</div>' +
       '</div>' +
-      '<div class="row-wrap" style="margin-top:14px">' + (inc.support || []).map(s => '<span class="tag">' + Icon("check", 10) + ' ' + s + '</span>').join("") + '</div>' +
+      '<div class="row-wrap" style="margin-top:14px">' + (inc.support || []).map(s => '<span class="tag">' + Icon("check", 10) + ' ' + esc(s) + '</span>').join("") + '</div>' +
     '</div>' +
 
     '<div class="grid-2" style="align-items:start">' +
@@ -578,7 +578,7 @@ function incubatorDashboard() {
         '<div class="card-header"><div class="h3"><span class="card-title-ic">' + Icon("briefcase", 17) + '</span>My programs</div>' +
         '<button class="btn btn-ghost btn-sm" onclick="App.navigate(\'#/incubator/opportunities\')">Manage</button></div>' +
         (myOpps.slice(0, 3).map(o =>
-          '<div class="list-row"><div class="lr-main"><div class="semibold" style="font-size:13.5px">' + o.title + '</div>' +
+          '<div class="list-row"><div class="lr-main"><div class="semibold" style="font-size:13.5px">' + esc(o.title) + '</div>' +
           '<div class="tiny faint">' + Store.oppApplicationCount(o.id) + ' applications · ' + Store.oppQualifiedCount(o.id) + ' qualified</div></div>' +
           (o.status === "published" ? '<span class="badge badge-success">' + Icon("check", 11) + ' Published</span>' : o.status === "draft" ? '<span class="badge badge-neutral">Draft</span>' : '<span class="badge badge-neutral">Closed</span>') + '</div>'
         ).join("") || '<p class="muted small">No programs yet — post your first one.</p>') +
@@ -590,7 +590,7 @@ function incubatorDashboard() {
           const s = Store.getStartup(app.startupId);
           const o = Store.getOpportunity(app.opportunityId);
           return '<div class="list-row">' + startupLogo(s, 34) +
-            '<div class="lr-main"><div class="semibold" style="font-size:13.5px">' + s.name + '</div><div class="tiny faint">' + (o ? o.title : "") + ' · Gate passed ' + app.gate.decidedAt + '</div></div>' +
+            '<div class="lr-main"><div class="semibold" style="font-size:13.5px">' + esc(s.name) + '</div><div class="tiny faint">' + (o ? esc(o.title) : "") + ' · Gate passed ' + app.gate.decidedAt + '</div></div>' +
             '<button class="btn btn-soft btn-sm" onclick="App.navigate(\'#/incubator/startup/' + s.id + '\')">' + Icon("eye", 13) + 'Review</button></div>';
         }).join("") || '<p class="muted small">Applications that pass the Quality Gate will appear here.</p>') +
       '</div>' +
@@ -624,19 +624,19 @@ function organizerDashboard() {
     '<div class="glass-strong card" style="padding:24px;margin-bottom:20px">' +
       '<div class="row-between" style="flex-wrap:wrap;gap:14px">' +
         '<div class="row" style="gap:15px"><span class="card-title-ic violet" style="width:48px;height:48px">' + Icon("calendar", 21) + '</span>' +
-          '<div><div style="font-size:19px;font-weight:800">' + orgP.org + '</div>' +
-          '<div class="small muted">' + orgP.orgType + ' · ' + orgP.location + '</div></div></div>' +
-        '<div class="row-wrap" style="max-width:320px">' + (orgP.domains || []).map(d => '<span class="tag">' + d + '</span>').join("") + '</div>' +
+          '<div><div style="font-size:19px;font-weight:800">' + esc(orgP.org) + '</div>' +
+          '<div class="small muted">' + esc(orgP.orgType) + ' · ' + esc(orgP.location) + '</div></div></div>' +
+        '<div class="row-wrap" style="max-width:320px">' + (orgP.domains || []).map(d => '<span class="tag">' + esc(d) + '</span>').join("") + '</div>' +
       '</div>' +
-      '<p class="muted small" style="margin-top:12px;line-height:1.6">' + (orgP.about || "") + '</p>' +
+      '<p class="muted small" style="margin-top:12px;line-height:1.6">' + (esc(orgP.about) || "") + '</p>' +
     '</div>' +
 
     '<div class="glass card" style="margin-bottom:18px">' +
       '<div class="card-header"><div class="h3"><span class="card-title-ic">' + Icon("briefcase", 17) + '</span>My opportunities</div>' +
       '<button class="btn btn-ghost btn-sm" onclick="App.navigate(\'#/organizer/opportunities\')">Manage</button></div>' +
       (myOpps.slice(0, 3).map(o =>
-        '<div class="list-row"><div class="lr-main"><div class="semibold" style="font-size:13.5px">' + o.title + '</div>' +
-        '<div class="tiny faint">Deadline ' + o.deadline + (o.applicationMode === "external" ? ' · ' + (o.applicationLinkClicks || 0) + ' application-link clicks' : ' · ' + Store.oppApplicationCount(o.id) + ' applications') + '</div></div>' +
+        '<div class="list-row"><div class="lr-main"><div class="semibold" style="font-size:13.5px">' + esc(o.title) + '</div>' +
+        '<div class="tiny faint">Deadline ' + esc(o.deadline) + (o.applicationMode === "external" ? ' · ' + (o.applicationLinkClicks || 0) + ' application-link clicks' : ' · ' + Store.oppApplicationCount(o.id) + ' applications') + '</div></div>' +
         (o.status === "published" ? '<span class="badge badge-success">' + Icon("check", 11) + ' Published</span>' : o.status === "draft" ? '<span class="badge badge-neutral">Draft</span>' : '<span class="badge badge-neutral">Closed</span>') + '</div>'
       ).join("") || '<p class="muted small">No opportunities yet — create your first one.</p>') +
     '</div>' +
@@ -701,9 +701,9 @@ function profileShell(name, orgName, kvRows, chips, formHtml, saveAction) {
     '<div class="grid-2" style="grid-template-columns:300px 1fr;align-items:start">' +
       '<div class="glass card" style="text-align:center">' +
         '<div style="display:grid;place-items:center;margin-bottom:12px">' + personAvatar(name, 84) + '</div>' +
-        '<div class="semibold" style="font-size:17px">' + name + '</div>' +
-        '<div class="small muted">' + orgName + '</div>' +
-        '<div class="row-wrap" style="justify-content:center;margin-top:14px">' + chips.map(c => '<span class="tag">' + c + '</span>').join("") + '</div>' +
+        '<div class="semibold" style="font-size:17px">' + esc(name) + '</div>' +
+        '<div class="small muted">' + esc(orgName) + '</div>' +
+        '<div class="row-wrap" style="justify-content:center;margin-top:14px">' + chips.map(c => '<span class="tag">' + esc(c) + '</span>').join("") + '</div>' +
         '<div class="divider"></div>' +
         '<div class="kv" style="grid-template-columns:1fr;text-align:left">' + kvRows.map(k => '<dt>' + k[0] + '</dt><dd>' + (k[1] || "—") + '</dd>').join("") + '</div>' +
       '</div>' +
@@ -729,12 +729,12 @@ function investorProfile() {
     '<div class="grid-2" style="grid-template-columns:300px 1fr;align-items:start">' +
       '<div class="glass card" style="text-align:center">' +
         '<div style="display:grid;place-items:center;margin-bottom:12px">' + personAvatar(p.name, 84) + '</div>' +
-        '<div class="semibold" style="font-size:17px">' + p.name + '</div>' +
-        '<div class="small muted">' + p.org + '</div>' +
-        '<div class="row-wrap" style="justify-content:center;margin-top:14px">' + p.sectors.map(sk => '<span class="tag">' + sk + '</span>').join("") + '</div>' +
+        '<div class="semibold" style="font-size:17px">' + esc(p.name) + '</div>' +
+        '<div class="small muted">' + esc(p.org) + '</div>' +
+        '<div class="row-wrap" style="justify-content:center;margin-top:14px">' + p.sectors.map(sk => '<span class="tag">' + esc(sk) + '</span>').join("") + '</div>' +
         '<div class="divider"></div>' +
         '<div class="small semibold" style="text-align:left;margin-bottom:6px">Portfolio (fictional)</div>' +
-        '<div class="row-wrap">' + p.portfolio.map(x => '<span class="badge badge-neutral">' + x + '</span>').join("") + '</div>' +
+        '<div class="row-wrap">' + p.portfolio.map(x => '<span class="badge badge-neutral">' + esc(x) + '</span>').join("") + '</div>' +
       '</div>' +
 
       '<div class="glass card">' +

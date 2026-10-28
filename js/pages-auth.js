@@ -1,5 +1,5 @@
 /* ============================================================
-   VENTURE CONNECT  Authentication & Onboarding
+   VENTURE CONNECT — Authentication & Onboarding
    Production-ready authentication flows for all user types
    ============================================================ */
 
@@ -122,7 +122,7 @@ const AUTH_FLOWS = {
     icon: "spark",
     submitLabel: "Continue to Venture Connect",
     steps: [
-      { name: "Account", note: "Your login details  nothing else, yet.", fields: [
+      { name: "Account", note: "Your login details — nothing else, yet.", fields: [
         { key: "fullName", label: "Full Name", type: "text", req: true, ph: "e.g. Aarav Mehta" },
         { key: "email", label: "Email", type: "email", req: true, ph: "you@example.com" },
         { key: "password", label: "Password", type: "password", req: true, ph: "Min. 6 characters" },
@@ -142,7 +142,7 @@ const AUTH_FLOWS = {
     icon: "trending",
     submitLabel: "Enter Investor Dashboard",
     steps: [
-      { name: "Account", note: "Your login details  nothing else, yet.", fields: [
+      { name: "Account", note: "Your login details — nothing else, yet.", fields: [
         { key: "fullName", label: "Full Name", type: "text", req: true, ph: "e.g. Nikhil Rao" },
         { key: "email", label: "Work Email", type: "email", req: true, ph: "you@firm.com" },
         { key: "password", label: "Password", type: "password", req: true, ph: "Min. 6 characters" },
@@ -160,7 +160,7 @@ const AUTH_FLOWS = {
     icon: "layers",
     submitLabel: "Enter Incubator Dashboard",
     steps: [
-      { name: "Account", note: "Your login details  nothing else, yet.", fields: [
+      { name: "Account", note: "Your login details — nothing else, yet.", fields: [
         { key: "fullName", label: "Full Name", type: "text", req: true, ph: "e.g. Priya Nair" },
         { key: "email", label: "Official Email", type: "email", req: true, ph: "hello@incubator.org" },
         { key: "password", label: "Password", type: "password", req: true, ph: "Min. 6 characters" },
@@ -178,7 +178,7 @@ const AUTH_FLOWS = {
     icon: "calendar",
     submitLabel: "Enter Organizer Dashboard",
     steps: [
-      { name: "Account", note: "Your login details  nothing else, yet.", fields: [
+      { name: "Account", note: "Your login details — nothing else, yet.", fields: [
         { key: "org", label: "Organization / Organizer Name", type: "text", req: true, ph: "e.g. Hack the Valley Collective" },
         { key: "email", label: "Official Email", type: "email", req: true, ph: "events@org.com" },
         { key: "password", label: "Password", type: "password", req: true, ph: "Min. 6 characters" },
@@ -203,7 +203,7 @@ function renderSignup(role) {
     const cls = i < authStep ? " done" : i === authStep ? " current" : "";
     return '<div class="step-item' + cls + '">' +
       '<span class="step-dot">' + (i < authStep ? Icon("check", 11) : i + 1) + '</span>' +
-      '<span class="step-name">' + s.name + '</span>' +
+      '<span class="step-name">' + esc(s.name) + '</span>' +
       (i < flow.steps.length - 1 ? '<span class="step-line"></span>' : '') +
     '</div>';
   }).join("");
@@ -224,8 +224,8 @@ function renderSignup(role) {
         '<div style="margin-bottom:22px">' +
           '<span class="vc-logo lg-auth" style="justify-content:center;margin-bottom:14px"><img src="assets/logo/logo-primary.png" alt="Venture Connect" /></span>' +
           '<h1 class="h2" style="text-align:center">' + heroTitle + '</h1>' +
-          '<p class="small muted" style="text-align:center;margin-top:2px">' + (role === "founder" ? "Two quick steps and you are in  everything else happens inside the product." : "Two quick steps and you are in  preferences can be completed later from your profile.") + '</p>' +
-          '<p class="small faint" style="text-align:center;margin-top:10px">Step ' + (authStep + 1) + ' of ' + flow.steps.length + '  ' + step.name + '</p>' +
+          '<p class="small muted" style="text-align:center;margin-top:2px">' + (role === "founder" ? "Two quick steps and you are in — everything else happens inside the product." : "Two quick steps and you are in — preferences can be completed later from your profile.") + '</p>' +
+          '<p class="small faint" style="text-align:center;margin-top:10px">Step ' + (authStep + 1) + ' of ' + flow.steps.length + ' — ' + esc(step.name) + '</p>' +
           (step.note ? '<p class="tiny faint" style="text-align:center;margin-top:4px">' + step.note + '</p>' : '') +
         '</div>' +
 
@@ -261,8 +261,8 @@ function authSummary(role, flow) {
     rows.push(["Organization", d.org], ["Type", d.orgType], ["Email", d.email], ["Domains", (d.domains || []).join(", ")]);
   }
   return '<div style="padding:16px 18px;border-radius:16px;background:var(--accent-softer);border:1px solid rgba(99,102,241,.15)">' +
-    '<div class="semibold small" style="color:var(--accent-deep);margin-bottom:10px">' + Icon("checkCircle", 13) + ' Almost there  review your profile</div>' +
-    '<div class="kv" style="grid-template-columns:130px 1fr">' + rows.map(r => '<dt>' + r[0] + '</dt><dd>' + (r[1] || "") + '</dd>').join("") + '</div>' +
+    '<div class="semibold small" style="color:var(--accent-deep);margin-bottom:10px">' + Icon("checkCircle", 13) + ' Almost there — review your profile</div>' +
+    '<div class="kv" style="grid-template-columns:130px 1fr">' + rows.map(r => '<dt>' + r[0] + '</dt><dd>' + (r[1] || "—") + '</dd>').join("") + '</div>' +
   '</div>';
 }
 
@@ -312,11 +312,11 @@ function authField(f) {
     return '<div class="field"><label>' + f.label + (f.req ? ' <span class="req">*</span>' : '') + '</label><div class="row-wrap">' + chips + '</div></div>';
   }
   if (f.type === "select") {
-    const opts = ['<option value="">Select</option>'].concat(f.options.map(o => '<option value="' + o + '"' + (d[f.key] === o ? " selected" : "") + '>' + o + '</option>')).join("");
+    const opts = ['<option value="">Select—</option>'].concat(f.options.map(o => '<option value="' + o + '"' + (d[f.key] === o ? " selected" : "") + '>' + o + '</option>')).join("");
     return '<div class="field"><label>' + f.label + (f.req ? ' <span class="req">*</span>' : '') + '</label><select class="select" id="af-' + f.key + '" onchange="App.authFieldSet(\'' + f.key + '\',this.value)">' + opts + '</select></div>';
   }
   if (f.type === "textarea") {
     return '<div class="field"><label>' + f.label + (f.req ? ' <span class="req">*</span>' : '') + '</label><textarea class="textarea" id="af-' + f.key + '" placeholder="' + (f.ph || "") + '" oninput="App.authFieldSet(\'' + f.key + '\',this.value)">' + escapeHtml(d[f.key] || "") + '</textarea></div>';
   }
-  return '<div class="field"><label>' + f.label + (f.req ? ' <span class="req">*</span>' : '') + '</label><input class="input" id="af-' + f.key + '" type="' + (f.type || "text") + '" placeholder="' + (f.ph || "") + '" value="' + escapeHtml(d[f.key] || "") + '" oninput="App.authFieldSet(\'' + f.key + '\',this.value)" /></div>';
+  return '<div class="field"><label>' + f.label + (f.req ? ' <span class="req">*</span>' : '') + '</label><input class="input" id="af-' + f.key + '" type="' + (esc(f.type) || "text") + '" placeholder="' + (f.ph || "") + '" value="' + escapeHtml(d[f.key] || "") + '" oninput="App.authFieldSet(\'' + f.key + '\',this.value)" /></div>';
 }
