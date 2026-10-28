@@ -26,6 +26,20 @@ function appNextStep(app) {
   return { text: "Your application is under review by Venture Connect." };
 }
 
+/* Label + colour for an application, as the founder sees it. Used by the dashboard, the
+   application pages, the stage pages and the internal review page (tone: success | warning |
+   danger | indigo | neutral). It was called in nine places but never defined, so those pages
+   threw a ReferenceError as soon as an application existed. */
+function founderAppStatus(app) {
+  if (!app) return { label: "Not submitted", tone: "neutral" };
+  const label = Store.applicationStatus(app);
+  if (label === "Not Approved") return { label, tone: "danger" };
+  if (label === "Approved for Organization Review") return { label, tone: "success" };
+  if (app.needsRevision) return { label: "Needs Revision", tone: "warning" };
+  if (label === "Clarification Requested" || label === "Review Target Reached") return { label, tone: "warning" };
+  return { label, tone: "indigo" };
+}
+
 /* Founder's most relevant application */
 function myTopApp() {
   const apps = Store.applicationsForStartup(Store.founder().startupId);
@@ -457,7 +471,7 @@ function founderApplicationDetail(id) {
           ? '<div class="col" style="gap:11px">' + feedback.map(fb =>
               '<div style="padding:13px 15px;border-left:3px solid var(--' + (fb[2] === "green" ? "success" : fb[2]) + ');border-radius:0 13px 13px 0;background:rgba(255,255,255,.55)">' +
                 '<div class="small semibold" style="color:var(--' + (fb[2] === "green" ? "success" : fb[2]) + ')">' + fb[0] + '</div>' +
-                '<div class="small muted" style="margin-top:3px">' + fb[1] + '</div></div>'
+                '<div class="small muted" style="margin-top:3px">' + esc(fb[1]) + '</div></div>'
             ).join("") + '</div>'
           : '<p class="muted small">No feedback yet. It will appear here as Venture Connect progresses through its review.</p>') +
       '</div>' +

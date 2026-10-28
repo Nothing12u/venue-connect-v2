@@ -225,7 +225,7 @@ function investorReview(id) {
           '<div class="col" style="gap:11px">' + sections.map(sec =>
             '<div style="padding:13px 15px;border-radius:14px;background:rgba(255,255,255,.55);border:1px solid var(--hairline)">' +
               '<div class="tiny semibold faint" style="text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px">' + sec[0] + '</div>' +
-              '<div class="small" style="line-height:1.6">' + sec[1] + '</div></div>'
+              '<div class="small" style="line-height:1.6">' + esc(sec[1]) + '</div></div>'
           ).join("") + '</div>' +
         '</div>' +
 
@@ -252,7 +252,7 @@ function investorReview(id) {
 
           '<div class="glass card">' +
             '<div class="card-header"><div class="h3"><span class="card-title-ic amber">' + Icon("wallet", 17) + '</span>Funding ask &amp; use</div></div>' +
-            '<div class="kv"><dt>Funding ask</dt><dd>' + esc(s.fundingAsk) + '</dd><dt>Use of funds</dt><dd style="font-weight:500;line-height:1.55">' + esc(s.useOfFunds) + '</dd><dt>Team</dt><dd style="font-weight:500;line-height:1.55">' + s.team.map(t => t.name + ' — ' + t.role).join("; ") + '</dd></div>' +
+            '<div class="kv"><dt>Funding ask</dt><dd>' + esc(s.fundingAsk) + '</dd><dt>Use of funds</dt><dd style="font-weight:500;line-height:1.55">' + esc(s.useOfFunds) + '</dd><dt>Team</dt><dd style="font-weight:500;line-height:1.55">' + s.team.map(t => esc(t.name) + ' — ' + esc(t.role)).join("; ") + '</dd></div>' +
           '</div>' +
         '</div>' +
       '</div>' +
@@ -566,8 +566,8 @@ function incubatorDashboard() {
           '<div><div style="font-size:19px;font-weight:800">' + esc(inc.org) + '</div>' +
           '<div class="small muted">' + esc(inc.orgType) + ' · ' + esc(inc.location) + '</div></div></div>' +
         '<div class="row" style="gap:18px;flex-wrap:wrap">' +
-          '<div style="text-align:center"><div class="tiny faint semibold">FOCUS AREAS</div><div class="semibold small" style="margin-top:2px">' + (inc.sectors || []).join(", ") + '</div></div>' +
-          '<div style="text-align:center"><div class="tiny faint semibold">STAGES</div><div class="semibold small" style="margin-top:2px">' + (inc.stages || []).join(", ") + '</div></div>' +
+          '<div style="text-align:center"><div class="tiny faint semibold">FOCUS AREAS</div><div class="semibold small" style="margin-top:2px">' + esc((inc.sectors || []).join(", ")) + '</div></div>' +
+          '<div style="text-align:center"><div class="tiny faint semibold">STAGES</div><div class="semibold small" style="margin-top:2px">' + esc((inc.stages || []).join(", ")) + '</div></div>' +
         '</div>' +
       '</div>' +
       '<div class="row-wrap" style="margin-top:14px">' + (inc.support || []).map(s => '<span class="tag">' + Icon("check", 10) + ' ' + esc(s) + '</span>').join("") + '</div>' +
@@ -705,7 +705,7 @@ function profileShell(name, orgName, kvRows, chips, formHtml, saveAction) {
         '<div class="small muted">' + esc(orgName) + '</div>' +
         '<div class="row-wrap" style="justify-content:center;margin-top:14px">' + chips.map(c => '<span class="tag">' + esc(c) + '</span>').join("") + '</div>' +
         '<div class="divider"></div>' +
-        '<div class="kv" style="grid-template-columns:1fr;text-align:left">' + kvRows.map(k => '<dt>' + k[0] + '</dt><dd>' + (k[1] || "—") + '</dd>').join("") + '</div>' +
+        '<div class="kv" style="grid-template-columns:1fr;text-align:left">' + kvRows.map(k => '<dt>' + k[0] + '</dt><dd>' + esc(k[1] || "—") + '</dd>').join("") + '</div>' +
       '</div>' +
       '<div class="glass card">' +
         '<div class="card-header"><div class="h3"><span class="card-title-ic">' + Icon("user", 17) + '</span>Organization details</div></div>' +

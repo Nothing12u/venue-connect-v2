@@ -469,7 +469,7 @@ const App = {
 
         '<div class="main">' +
           '<div class="topbar desktop-top">' +
-            '<div class="topbar-title">' + title + '<small>' + sub + '</small></div>' +
+            '<div class="topbar-title">' + esc(title) + '<small>' + esc(sub) + '</small></div>' +
             '<div class="topbar-spacer"></div>' +
             (role !== "internal" ? '<button class="icon-btn" id="bell-btn" onclick="App.openDropdown(\'bell-btn\')">' + Icon("bell", 18) + (unread ? '<span class="dot"></span>' : '') + '</button>' : '') +
             '<button class="icon-btn" id="side-user" style="border:none;background:transparent;padding:0;width:auto;height:auto" onclick="App.openDropdown(\'side-user\')">' + personAvatar(me.name, 40) + '</button>' +
@@ -477,7 +477,7 @@ const App = {
           '<div class="topbar mobile-top">' +
             '<button class="icon-btn" onclick="App.openDrawer()">' + Icon("menu", 19) + '</button>' +
             '<img class="vc-logo-icon" src="assets/logo/logo-icon.png" alt="Venture Connect" />' +
-            '<div class="topbar-title" style="flex:1">' + title + '</div>' +
+            '<div class="topbar-title" style="flex:1">' + esc(title) + '</div>' +
             (role !== "internal" ? '<button class="icon-btn" id="bell-btn-m" onclick="App.openDropdown(\'bell-btn-m\')">' + Icon("bell", 18) + (unread ? '<span class="dot"></span>' : '') + '</button>' : '') +
           '</div>' +
           '<div id="vc-main"></div>' +

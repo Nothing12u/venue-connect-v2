@@ -48,15 +48,8 @@ const HACKATHON_DOMAINS = ["AI", "Web Development", "Hardware", "Robotics", "Fin
 const AUTH_LOCATIONS = ["India", "Global", "Other"];
 
 const OPP_CATEGORIES = ["Incubators", "Accelerators", "Investors", "Hackathons", "Competitions", "Grants", "Startup Programs"];
-const OPP_TYPES = [
-  ["Incubators", "Incubator"],
-  ["Accelerators", "Accelerator"],
-  ["Investors", "Investor"],
-  ["Hackathons", "Hackathon"],
-  ["Competitions", "Competition"],
-  ["Grants", "Grant"],
-  ["Startup Programs", "Startup Program"]
-];
+// (OPP_TYPES lives in pages-investor.js, where the opportunity form uses it. It was declared here too,
+// which made the browser refuse to run pages-investor.js at all.)
 
 /* ============================================================
    INTERNAL VENTURE CONNECT REVIEW SYSTEM
