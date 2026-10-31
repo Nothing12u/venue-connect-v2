@@ -34,17 +34,22 @@
 --    SECURITY DEFINER lets this check bypass RLS on `profiles`
 --    itself, so it never recurses back through the policies below.
 -- ---------------------------------------------------------------
+-- plpgsql (not sql) on purpose: a SQL-language body is validated when the
+-- function is created, and public.profiles does not exist yet at this point,
+-- which made a fresh install of this file fail.
 create or replace function public.is_internal()
 returns boolean
-language sql
+language plpgsql
 stable
 security definer
 set search_path = public
 as $$
-  select exists (
+begin
+  return exists (
     select 1 from public.profiles
     where id = auth.uid() and role = 'internal'
   );
+end;
 $$;
 
 -- ---------------------------------------------------------------

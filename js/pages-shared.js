@@ -50,18 +50,18 @@ function founderOpportunities() {
       ? '<div class="grid-3">' + filtered.map(o => {
           const applied = Store.applicationsForStartup(Store.founder().startupId).find(a => a.opportunityId === o.id);
           return '<div class="glass card glass-hover opp-card fade-up">' +
-            '<span class="badge ' + (o.applicationMode === "external" ? "badge-info" : "badge-violet") + ' opp-cat">' + (o.applicationMode === "external" ? Icon("external", 11) + 'External application' : o.category) + '</span>' +
-            '<div class="opp-title">' + o.title + '</div>' +
-            '<div class="opp-org">' + Icon("briefcase", 13) + ' ' + o.org + '</div>' +
+            '<span class="badge ' + (o.applicationMode === "external" ? "badge-info" : "badge-violet") + ' opp-cat">' + (o.applicationMode === "external" ? Icon("external", 11) + 'External application' : esc(o.category)) + '</span>' +
+            '<div class="opp-title">' + esc(o.title) + '</div>' +
+            '<div class="opp-org">' + Icon("briefcase", 13) + ' ' + esc(o.org) + '</div>' +
             '<div class="row-wrap">' +
-              '<span class="tag">' + (o.sector || "Other") + '</span>' +
-              '<span class="tag">' + Icon("mapPin", 10) + ' ' + (o.location || "Remote") + '</span>' +
-              (o.funding ? '<span class="tag">' + Icon("wallet", 10) + ' ' + o.funding + '</span>' : '') +
+              '<span class="tag">' + (esc(o.sector) || "Other") + '</span>' +
+              '<span class="tag">' + Icon("mapPin", 10) + ' ' + (esc(o.location) || "Remote") + '</span>' +
+              (o.funding ? '<span class="tag">' + Icon("wallet", 10) + ' ' + esc(o.funding) + '</span>' : '') +
             '</div>' +
-            '<p class="small muted" style="line-height:1.6">' + o.desc.slice(0, 140) + (o.desc.length > 140 ? "…" : "") + '</p>' +
-            '<div class="tiny faint" style="margin-bottom:4px">Eligibility: ' + (o.eligibility || "Open to student founders") + '</div>' +
+            '<p class="small muted" style="line-height:1.6">' + esc(String(o.desc || "").slice(0, 140)) + (String(o.desc || "").length > 140 ? "…" : "") + '</p>' +
+            '<div class="tiny faint" style="margin-bottom:4px">Eligibility: ' + (esc(o.eligibility) || "Open to student founders") + '</div>' +
             '<div class="opp-meta">' +
-              '<span class="opp-deadline">' + Icon("calendar", 12) + ' Deadline: <b>' + o.deadline + '</b></span>' +
+              '<span class="opp-deadline">' + Icon("calendar", 12) + ' Deadline: <b>' + esc(o.deadline) + '</b></span>' +
               '<button class="btn ' + (applied ? "btn-ghost" : "btn-primary") + ' btn-sm" onclick="App.navigate(\'' + (applied ? '#/founder/application/' + applied.id : '#/founder/opportunity/' + o.id) + '\')">' + (applied ? Icon("eye", 13) + 'View Application' : Icon("arrowR", 13) + (o.applicationMode === "external" ? 'View Hackathon' : 'Apply Now')) + '</button>' +
             '</div>' +
           '</div>';
@@ -88,11 +88,11 @@ function founderOpportunityDetail(id) {
     '</div>' +
     '<div class="glass-strong card" style="padding:28px;max-width:780px;margin:0 auto">' +
       '<div class="row-between" style="flex-wrap:wrap;gap:12px;margin-bottom:6px">' +
-        '<span class="badge ' + (external ? "badge-info" : "badge-violet") + '">' + (external ? Icon("external", 12) + 'External application' : o.category) + '</span>' +
-        '<span class="badge badge-neutral">' + (o.sector || "Other") + '</span>' +
+        '<span class="badge ' + (external ? "badge-info" : "badge-violet") + '">' + (external ? Icon("external", 12) + 'External application' : esc(o.category)) + '</span>' +
+        '<span class="badge badge-neutral">' + (esc(o.sector) || "Other") + '</span>' +
       '</div>' +
-      '<h1 class="h2" style="margin:10px 0 4px">' + o.title + '</h1>' +
-      '<div class="small muted">' + Icon("briefcase", 12) + ' ' + o.org + ' · ' + Icon("mapPin", 12) + ' ' + (o.location || "Remote") + '</div>' +
+      '<h1 class="h2" style="margin:10px 0 4px">' + esc(o.title) + '</h1>' +
+      '<div class="small muted">' + Icon("briefcase", 12) + ' ' + esc(o.org) + ' · ' + Icon("mapPin", 12) + ' ' + (esc(o.location) || "Remote") + '</div>' +
 
       (external
         ? '<div class="status-banner info" style="margin-top:18px"><span class="sb-ic">' + Icon("external", 20) + '</span><div><b>Application handled by organizer</b><p>Application and registration happen on the organizer\'s official website.</p></div></div>'
@@ -106,25 +106,25 @@ function founderOpportunityDetail(id) {
 
       '<div class="divider"></div>' +
       '<div class="semibold small" style="margin-bottom:8px">' + (external ? 'About' : 'About the opportunity') + '</div>' +
-      '<p class="muted" style="line-height:1.7;font-size:14.5px;margin-bottom:18px">' + o.desc + '</p>' +
+      '<p class="muted" style="line-height:1.7;font-size:14.5px;margin-bottom:18px">' + esc(o.desc) + '</p>' +
 
       '<div class="grid-2">' +
         '<div><div class="semibold small" style="margin-bottom:6px">Who can apply</div>' +
-        '<p class="muted small" style="line-height:1.6">' + o.eligibility + '</p></div>' +
+        '<p class="muted small" style="line-height:1.6">' + esc(o.eligibility) + '</p></div>' +
         '<div><div class="semibold small" style="margin-bottom:6px">What selected startups receive</div>' +
         '<div class="col" style="gap:6px">' + (o.perks || []).map(pk =>
-          '<div class="row" style="gap:9px"><span class="badge badge-success" style="padding:2px 7px">' + Icon("check", 10) + '</span><span class="small">' + pk + '</span></div>'
+          '<div class="row" style="gap:9px"><span class="badge badge-success" style="padding:2px 7px">' + Icon("check", 10) + '</span><span class="small">' + esc(pk) + '</span></div>'
         ).join("") + '</div></div>' +
       '</div>' +
 
       '<div style="padding:15px 17px;border-radius:15px;background:rgba(255,255,255,.55);border:1px solid var(--hairline);margin:18px 0">' +
         '<div class="kv" style="grid-template-columns:150px 1fr">' +
-          (external ? '<dt>Domains</dt><dd>' + (o.sector || "Other") + '</dd><dt>Team requirements</dt><dd>' + (o.teamRequirements || "—") + '</dd><dt>Event date</dt><dd>' + (o.eventDate || o.startDate || "—") + '</dd>' : '') +
-          '<dt>Funding / Support</dt><dd>' + (o.funding || "—") + '</dd>' +
-          '<dt>Equity</dt><dd>' + (o.equity || "None") + '</dd>' +
-          '<dt>Timeline</dt><dd>' + (o.duration || "—") + (o.startDate ? " · starts " + o.startDate : "") + '</dd>' +
-          '<dt>Deadline</dt><dd>' + o.deadline + '</dd>' +
-          '<dt>Location</dt><dd>' + (o.location || "Remote") + '</dd>' +
+          (external ? '<dt>Domains</dt><dd>' + (esc(o.sector) || "Other") + '</dd><dt>Team requirements</dt><dd>' + (esc(o.teamRequirements) || "—") + '</dd><dt>Event date</dt><dd>' + (esc(o.eventDate) || esc(o.startDate) || "—") + '</dd>' : '') +
+          '<dt>Funding / Support</dt><dd>' + (esc(o.funding) || "—") + '</dd>' +
+          '<dt>Equity</dt><dd>' + (esc(o.equity) || "None") + '</dd>' +
+          '<dt>Timeline</dt><dd>' + (esc(o.duration) || "—") + (o.startDate ? " · starts " + esc(o.startDate) : "") + '</dd>' +
+          '<dt>Deadline</dt><dd>' + esc(o.deadline) + '</dd>' +
+          '<dt>Location</dt><dd>' + (esc(o.location) || "Remote") + '</dd>' +
           '<dt>' + (external ? 'Application' : 'Application requirements') + '</dt><dd style="font-weight:500">' + (external ? 'Handled on the organizer\'s official website.' : 'Completed Idea Workspace with strong answers — Venture Connect runs automated checks, review, pitch, interview, and evidence verification before the investor sees your application.') + '</dd>' +
         '</div>' +
       '</div>' +
@@ -146,7 +146,7 @@ function founderApplicationReview(oppId) {
   const w = Store.workspace();
   const rows = WORKSPACE_SECTIONS.map(sec => '<div class="application-preview-row"><dt>' + sec.label + '</dt><dd>' + escapeHtml(w[sec.key] || "Not answered") + '</dd></div>').join("");
   return '<div class="page-head"><div><a href="#/founder/opportunity/' + o.id + '" class="small semibold" style="color:var(--accent-deep)">' + Icon("chevL", 13) + ' Back to opportunity</a><h1 class="h1" style="margin-top:10px">Review your application</h1><p class="sub">Your Idea Workspace will be submitted to Venture Connect for review.</p></div><span class="badge badge-indigo">Version 1 · Draft</span></div>' +
-    '<div class="glass-strong card application-review-card"><div class="row-between" style="flex-wrap:wrap;gap:12px;margin-bottom:18px"><div><div class="tiny faint semibold">APPLICATION FOR</div><div class="h2">' + o.title + '</div><div class="small muted">' + o.org + ' · ' + (o.category || "Opportunity") + '</div></div><span class="badge badge-info">Venture Connect review</span></div>' +
+    '<div class="glass-strong card application-review-card"><div class="row-between" style="flex-wrap:wrap;gap:12px;margin-bottom:18px"><div><div class="tiny faint semibold">APPLICATION FOR</div><div class="h2">' + esc(o.title) + '</div><div class="small muted">' + esc(o.org) + ' · ' + (esc(o.category) || "Opportunity") + '</div></div><span class="badge badge-info">Venture Connect review</span></div>' +
     '<div class="application-preview-list">' + rows + '</div>' +
     '<div class="status-banner info" style="margin-top:18px"><span class="sb-ic">' + Icon("shield", 20) + '</span><div><b>Submit to Venture Connect</b><p>After submission, you will have 10 days to update this application. Venture Connect will then continue its review for up to 30 days.</p></div></div>' +
     '<div class="row" style="justify-content:flex-end;margin-top:18px"><button class="btn btn-ghost" onclick="App.navigate(\'#/founder/opportunity/' + o.id + '\')">Cancel</button><button class="btn btn-primary btn-lg" onclick="App.submitApplication(\'' + o.id + '\')">' + Icon("send", 16) + 'Submit Application</button></div></div>';
@@ -174,18 +174,18 @@ function messagingPage(role, convId) {
     const last = c.items[c.items.length - 1];
     return '<div class="msg-item' + (c.key === activeConv ? " active" : "") + '" onclick="App.openConv(\'' + c.key + '\')">' +
       (st ? startupLogo(st, 36) : personAvatar(c.partner.name, 36)) +
-      '<div style="flex:1;min-width:0"><div class="m-name">' + name + '</div><div class="m-prev">' + (last ? last.text : sub) + '</div></div>' +
+      '<div style="flex:1;min-width:0"><div class="m-name">' + esc(name) + '</div><div class="m-prev">' + (last ? esc(last.text) : esc(sub)) + '</div></div>' +
       '<div class="m-time">' + (last ? last.time.split(",")[0] : "") + '</div>' +
     '</div>';
   }).join("");
 
   const msgs = conv ? conv.items.map(m =>
-    '<div class="bubble ' + (m.from === "me" ? "mine" : "theirs") + '">' + m.text + '<span class="b-time">' + m.time + '</span></div>'
+    '<div class="bubble ' + (m.from === "me" ? "mine" : "theirs") + '">' + esc(m.text) + '<span class="b-time">' + m.time + '</span></div>'
   ).join("") : "";
 
   const headMeta = startup
     ? '<div class="mh-meta">' + gateBadge(startup.qualityGate) + '<span class="score-chip" style="font-size:11px;padding:2px 8px">' + startup.score + '/100</span></div>'
-    : '<div class="mh-meta"><span class="tag">' + (conv ? conv.partner.role : "") + '</span></div>';
+    : '<div class="mh-meta"><span class="tag">' + (conv ? esc(conv.partner.role) : "") + '</span></div>';
 
   const html =
     '<div class="page-head">' +
@@ -201,7 +201,7 @@ function messagingPage(role, convId) {
         (conv
           ? '<div class="msg-head">' +
               (startup ? startupLogo(startup, 42) : personAvatar(conv.partner.name, 42)) +
-              '<div style="flex:1;min-width:0"><div class="mh-title">' + (startup ? "Conversation with " + startup.name : conv.partner.name) + '</div>' + headMeta + '</div>' +
+              '<div style="flex:1;min-width:0"><div class="mh-title">' + (startup ? "Conversation with " + esc(startup.name) : esc(conv.partner.name)) + '</div>' + headMeta + '</div>' +
               '<button class="icon-btn" onclick="App.navigate(\'' + (startup ? "#/" + role + "/startup/" + startup.id : "#/" + role + "/profile") + '\')">' + Icon("external", 15) + '</button>' +
             '</div>'
           : '') +
@@ -227,7 +227,7 @@ function notificationsHtml() {
     items.map(n =>
       '<div class="notif-item' + (n.read ? "" : " unread") + '" onclick="App.closeDropdown()">' +
         '<span class="n-ic ' + (n.tone === "success" ? "green" : n.tone === "violet" ? "violet" : n.tone === "info" ? "blue" : "amber") + ' card-title-ic">' + Icon(n.icon, 15) + '</span>' +
-        '<div><div class="n-text">' + n.text + '</div><div class="n-time">' + n.time + '</div></div>' +
+        '<div><div class="n-text">' + esc(n.text) + '</div><div class="n-time">' + n.time + '</div></div>' +
       '</div>'
     ).join("") +
     '<div class="dd-sep"></div>' +
@@ -239,11 +239,11 @@ function userMenuHtml() {
   const p = Store.me();
   const role = Store.getRole();
   const roleLabel = role === "investor" ? "Investor account" : role === "incubator" ? "Incubator account" : role === "organizer" ? "Organizer account" : role === "internal" ? "Venture Connect internal" : "Founder account";
-  const orgLine = (role === "investor" || role === "incubator" || role === "organizer" || role === "internal") ? p.org : p.college;
+  const orgLine = (role === "investor" || role === "incubator" || role === "organizer" || role === "internal") ? esc(p.org) : esc(p.college);
 
   return '<div class="dd-head">' + roleLabel + '</div>' +
     '<div class="dd-item" style="pointer-events:none;flex-direction:column;align-items:flex-start;gap:1px">' +
-      '<span class="semibold">' + p.name + '</span><span class="tiny faint">' + orgLine + '</span>' +
+      '<span class="semibold">' + esc(p.name) + '</span><span class="tiny faint">' + orgLine + '</span>' +
     '</div>' +
     '<div class="dd-sep"></div>' +
     (role !== "founder" ? '<button class="dd-item" onclick="App.switchRole(\'founder\')">' + Icon("spark", 14) + 'Switch to Founder view</button>' : '') +

@@ -71,6 +71,8 @@ const ROLE_SUB = { founder: "Founder workspace", investor: "Investor workspace",
 
 const ROLE_HOME = { founder: "#/founder/dashboard", investor: "#/investor/dashboard", incubator: "#/incubator/dashboard", organizer: "#/organizer/dashboard", internal: "#/internal/dashboard" };
 
+const MIN_PASSWORD = 8;
+
 const App = {
   pending: null,
   currentRole: null,
@@ -84,25 +86,19 @@ const App = {
     Store.setRole(role);
     this.navigate(hash || ROLE_HOME[role] || "#/founder/dashboard");
   },
+  // An account only ever has the one role it signed up with (it is stored in the database and
+  // cannot be changed from the browser); this just returns to that role's home.
   switchRole(role) {
-    if (!Store.getRole()) { this.navigate("#/auth"); return; }
-    Store.setRole(role);
+    const mine = Store.sessionUser() && Store.sessionUser().role;
+    if (!mine) { this.navigate("#/auth"); return; }
     this.closeDropdown();
-    this.navigate(ROLE_HOME[role]);
-    const label = role === "investor" ? "investor" : role === "incubator" ? "incubator" : role === "organizer" ? "organizer" : role === "internal" ? "internal review" : "founder";
-    toast("Switched to the " + label + " experience", "info");
+    this.navigate(ROLE_HOME[mine]);
   },
   async signOut() {
     await Store.signOut();
     this.closeDropdown();
     this.navigate("#/");
     toast("Signed out — see you soon", "info");
-  },
-  async reset() {
-    await Store.reset();
-    this.closeDropdown();
-    this.navigate("#/");
-    toast("Data reset to defaults", "info");
   },
 
   /* ---------------- authentication ---------------- */
@@ -122,7 +118,45 @@ const App = {
     closeModal();
     this.navigate("#/auth/signup/" + authPartner);
   },
-  authForgot() { toast("Password reset link sent — check your inbox", "info", "send"); },
+  authForgot() {
+    openModal(
+      '<div class="modal-head"><h3 class="h3">Reset your password</h3><button class="modal-close" onclick="closeModal()">' + Icon("x", 15) + '</button></div>' +
+      '<p class="muted small" style="margin-bottom:14px">Enter the email you signed up with and we will send you a reset link.</p>' +
+      '<div class="field"><label>Email</label><input class="input" id="fp-email" type="email" placeholder="you@example.com" value="' + esc(val("li-email")) + '" onkeydown="if(event.key===\'Enter\')App.authForgotSend()" /></div>' +
+      '<button class="btn btn-primary btn-lg btn-block" style="margin-top:6px" onclick="App.authForgotSend()">' + Icon("send", 15) + 'Send reset link</button>'
+    );
+  },
+  async authForgotSend() {
+    const email = val("fp-email");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast("Enter a valid email address", "error", "alert"); return; }
+    const res = await DB.resetPassword(email);
+    if (!res.ok) { toast(res.err, "error", "alert"); return; }
+    closeModal();
+    // Same message whether or not the address has an account, so this cannot be used to find out who is registered.
+    toast("If that email has an account, a reset link is on its way.", "info", "send");
+  },
+  // Opened when the user arrives from a reset-password email (they hold a recovery session).
+  showPasswordReset() {
+    openModal(
+      '<div class="modal-head"><h3 class="h3">Choose a new password</h3></div>' +
+      '<div class="field"><label>New password <span class="toggle-pw" onclick="togglePwVis(this)">' + Icon("eye", 14) + '</span></label><input class="input" id="np-pass" type="password" placeholder="At least ' + MIN_PASSWORD + ' characters" /></div>' +
+      '<div class="field"><label>Confirm new password</label><input class="input" id="np-confirm" type="password" placeholder="Repeat the password" onkeydown="if(event.key===\'Enter\')App.submitPasswordReset()" /></div>' +
+      '<button class="btn btn-primary btn-lg btn-block" style="margin-top:6px" onclick="App.submitPasswordReset()">' + Icon("check", 15) + 'Update password</button>'
+    );
+  },
+  async submitPasswordReset() {
+    const pass = document.getElementById("np-pass").value;
+    const confirm = document.getElementById("np-confirm").value;
+    if (pass.length < MIN_PASSWORD) { toast("Password must be at least " + MIN_PASSWORD + " characters", "error", "alert"); return; }
+    if (pass !== confirm) { toast("Passwords do not match", "error", "alert"); return; }
+    const res = await DB.updatePassword(pass);
+    if (!res.ok) { toast(res.err, "error", "alert"); return; }
+    closeModal();
+    toast("Password updated", "success", "checkCircle");
+    await Store.init();
+    const u = Store.sessionUser();
+    this.navigate(u ? ROLE_HOME[u.role] : "#/auth/login");
+  },
   authFieldSet(key, value) { authDraft[key] = value; },
   authChip(key, value) {
     const flow = AUTH_FLOWS[authRole];
@@ -149,7 +183,7 @@ const App = {
     });
     const emailField = step.fields.find(f => f.type === "email");
     if (emailField && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(authDraft[emailField.key] || "")) { toast("Enter a valid email address", "error", "alert"); return; }
-    if (step.fields.some(f => f.key === "password") && (authDraft.password || "").length < 6) { toast("Password must be at least 6 characters", "error", "alert"); return; }
+    if (step.fields.some(f => f.key === "password") && (authDraft.password || "").length < MIN_PASSWORD) { toast("Password must be at least " + MIN_PASSWORD + " characters", "error", "alert"); return; }
     if (step.fields.some(f => f.key === "confirm") && authDraft.confirm !== authDraft.password) { toast("Passwords do not match", "error", "alert"); return; }
     if (missing.length) { toast("Please complete: " + missing.join(", "), "error", "alert"); return; }
     authStep += 1;
@@ -193,7 +227,7 @@ const App = {
     missing = [...new Set(missing)];
     if (missing.length) { toast("Missing: " + missing.join(", "), "error", "alert"); return; }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email || "")) { toast("Enter a valid email address", "error", "alert"); return; }
-    if ((d.password || "").length < 6) { toast("Password must be at least 6 characters", "error", "alert"); return; }
+    if ((d.password || "").length < MIN_PASSWORD) { toast("Password must be at least " + MIN_PASSWORD + " characters", "error", "alert"); return; }
     if (d.confirm !== undefined && d.confirm !== d.password) { toast("Passwords do not match", "error", "alert"); return; }
 
     let name = d.fullName || d.org;
@@ -209,14 +243,29 @@ const App = {
       name = d.org;
     }
 
-    const res = await Store.registerAccount(d.email, d.password, authRole, profileFields);
-    if (!res.ok) { toast(res.err, "error", "alert"); return; }
-
+    let startup = null;
     if (authRole === "founder") {
-      await Store.addUserStartup({
+      startup = {
         name: d.startupName,
-        description: "A " + (d.stage || "student") + " startup in " + (d.industry || "tech") + ". Details live in the Idea Workspace.",
-        industry: d.industry, stage: d.stage, location: "",
+        tagline: ("A " + (d.stage || "student") + " startup in " + (d.industry || "tech") + ". Details live in the Idea Workspace.").slice(0, 80),
+        sector: d.industry || "Other", stage: d.stage || "Idea Stage", location: "India",
+        team: [{ name: d.fullName, role: "Founder", detail: d.college || "" }],
+        milestones: [{ name: "Complete the Idea Workspace", done: false }]
+      };
+    }
+    const res = await Store.registerAccount(d.email, d.password, authRole, profileFields, startup);
+    if (!res.ok) { toast(res.err, "error", "alert"); return; }
+    if (res.needsConfirmation) {
+      // The project requires email confirmation: the account exists, but there is no session until the link is clicked.
+      authDraft = {}; authStep = 0; authRole = null;
+      toast("Check your inbox and confirm your email, then log in.", "info", "send");
+      this.navigate("#/auth/login");
+      return;
+    }
+    // Fallback for a database that has not run supabase/hardening.sql (no signup trigger): create the startup from here.
+    if (authRole === "founder" && !Store.myStartup()) {
+      await Store.addUserStartup({
+        name: d.startupName, description: startup.tagline, industry: d.industry, stage: d.stage, location: "",
         founderName: d.fullName, college: d.college, bio: ""
       });
     }
@@ -413,14 +462,14 @@ const App = {
           '</div>' +
           '<div class="side-foot">' +
             '<button class="nav-item" style="width:100%" onclick="App.openDropdown(\'side-user\')">' +
-              personAvatar(me.name, 32) + '<span>' + shortName + '</span>' + Icon("chevD", 13) +
+              personAvatar(me.name, 32) + '<span>' + esc(shortName) + '</span>' + Icon("chevD", 13) +
             '</button>' +
           '</div>' +
         '</aside>' +
 
         '<div class="main">' +
           '<div class="topbar desktop-top">' +
-            '<div class="topbar-title">' + title + '<small>' + sub + '</small></div>' +
+            '<div class="topbar-title">' + esc(title) + '<small>' + esc(sub) + '</small></div>' +
             '<div class="topbar-spacer"></div>' +
             (role !== "internal" ? '<button class="icon-btn" id="bell-btn" onclick="App.openDropdown(\'bell-btn\')">' + Icon("bell", 18) + (unread ? '<span class="dot"></span>' : '') + '</button>' : '') +
             '<button class="icon-btn" id="side-user" style="border:none;background:transparent;padding:0;width:auto;height:auto" onclick="App.openDropdown(\'side-user\')">' + personAvatar(me.name, 40) + '</button>' +
@@ -428,7 +477,7 @@ const App = {
           '<div class="topbar mobile-top">' +
             '<button class="icon-btn" onclick="App.openDrawer()">' + Icon("menu", 19) + '</button>' +
             '<img class="vc-logo-icon" src="assets/logo/logo-icon.png" alt="Venture Connect" />' +
-            '<div class="topbar-title" style="flex:1">' + title + '</div>' +
+            '<div class="topbar-title" style="flex:1">' + esc(title) + '</div>' +
             (role !== "internal" ? '<button class="icon-btn" id="bell-btn-m" onclick="App.openDropdown(\'bell-btn-m\')">' + Icon("bell", 18) + (unread ? '<span class="dot"></span>' : '') + '</button>' : '') +
           '</div>' +
           '<div id="vc-main"></div>' +
@@ -578,7 +627,7 @@ const App = {
     if (!s) return;
     const dims = [["problem", "Problem"], ["solution", "Solution"], ["market", "Market"], ["validation", "Validation"], ["businessModel", "Business model"], ["team", "Team"]];
     openModal(
-      '<div class="modal-head"><h3 class="h3">VC Readiness Report — ' + s.name + '</h3><button class="modal-close" onclick="closeModal()">' + Icon("x", 15) + '</button></div>' +
+      '<div class="modal-head"><h3 class="h3">VC Readiness Report — ' + esc(s.name) + '</h3><button class="modal-close" onclick="closeModal()">' + Icon("x", 15) + '</button></div>' +
       '<div class="row" style="gap:20px;align-items:center;margin-bottom:16px">' +
         Ring(s.score, 100, "readiness") +
         '<p class="muted small" style="flex:1">Assessed by Venture Connect across six dimensions. This score is shared with all investors on the platform, so it is consistent across your pipeline.</p>' +
@@ -840,7 +889,7 @@ const App = {
   },
 
   /* ---------------- profiles ---------------- */
-  saveFounderProfile() {
+  async saveFounderProfile() {
     const f = Store.founder();
     f.name = val("pf-name") || f.name;
     f.college = val("pf-college") || f.college;
@@ -848,11 +897,11 @@ const App = {
     f.bio = val("pf-bio") || f.bio;
     f.socials.linkedin = val("pf-li"); f.socials.twitter = val("pf-tw"); f.socials.github = val("pf-gh");
     f.skills = val("pf-skills").split(",").map(x => x.trim()).filter(Boolean);
-    Store.save();
+    try { await Store.save(); } catch (e) { toast("Could not save your profile: " + e.message, "error", "alert"); return; }
     toast("Profile saved", "success", "checkCircle");
     this.render();
   },
-  saveInvestorProfile() {
+  async saveInvestorProfile() {
     const p = Store.investor();
     p.name = val("ip-name") || p.name;
     p.org = val("ip-org") || p.org;
@@ -862,11 +911,11 @@ const App = {
     p.geography = val("ip-geo") || p.geography;
     p.ticket = val("ip-ticket") || p.ticket;
     p.portfolio = csv("ip-portfolio");
-    Store.save();
+    try { await Store.save(); } catch (e) { toast("Could not save your profile: " + e.message, "error", "alert"); return; }
     toast("Profile saved", "success", "checkCircle");
     this.render();
   },
-  saveIncubatorProfile() {
+  async saveIncubatorProfile() {
     const p = Store.incubator();
     p.org = val("in-org") || p.org;
     p.orgType = val("in-orgtype") || p.orgType;
@@ -879,11 +928,11 @@ const App = {
     p.funding = val("in-funding");
     p.equity = val("in-equity");
     p.description = val("in-desc");
-    Store.save();
+    try { await Store.save(); } catch (e) { toast("Could not save your profile: " + e.message, "error", "alert"); return; }
     toast("Profile saved", "success", "checkCircle");
     this.render();
   },
-  saveOrganizerProfile() {
+  async saveOrganizerProfile() {
     const p = Store.organizer();
     p.org = val("or-org") || p.org;
     p.orgType = val("or-orgtype") || p.orgType;
@@ -891,7 +940,7 @@ const App = {
     p.location = val("or-location") || p.location;
     p.about = val("or-about") || p.about;
     p.domains = csv("or-domains");
-    Store.save();
+    try { await Store.save(); } catch (e) { toast("Could not save your profile: " + e.message, "error", "alert"); return; }
     toast("Profile saved", "success", "checkCircle");
     this.render();
   },
@@ -938,7 +987,7 @@ const App = {
     if (!conv || !body) { this.render(); return; }
     const startup = conv.startupId ? Store.getStartup(conv.startupId) : null;
     body.innerHTML = '<div class="msg-day">TODAY</div>' + conv.items.map(m =>
-      '<div class="bubble ' + (m.from === "me" ? "mine" : "theirs") + '">' + m.text + '<span class="b-time">' + m.time + '</span></div>'
+      '<div class="bubble ' + (m.from === "me" ? "mine" : "theirs") + '">' + esc(m.text) + '<span class="b-time">' + m.time + '</span></div>'
     ).join("");
     body.scrollTop = body.scrollHeight;
     const headMeta = document.querySelector(".msg-head .mh-meta");

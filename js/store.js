@@ -22,6 +22,7 @@ const Store = (() => {
   function defaults() {
     return {
       role: null,
+      accountRole: null,       // the role this account really has (set from the profile row; never user-editable)
       founder: Object.assign({}, DEFAULT_FOUNDER_PROFILE),
       investor: Object.assign({}, DEFAULT_INVESTOR_PROFILE),
       incubator: Object.assign({}, DEFAULT_INCUBATOR_PROFILE),
@@ -85,11 +86,32 @@ const Store = (() => {
 
   function profileIntoRole(role, row) {
     const socials = row.socials || {};
-    if (role === "founder") return Object.assign({}, DEFAULT_FOUNDER_PROFILE, { name: row.name, college: row.college, location: row.location, skills: row.skills || [], bio: row.bio, socials, startupId: null });
-    if (role === "investor") return Object.assign({}, DEFAULT_INVESTOR_PROFILE, { name: row.name, org: row.org, title: row.title, bio: row.bio, sectors: row.sectors || [], stages: row.stages || [], ticketSize: row.ticket_size, location: row.location, socials });
-    if (role === "incubator") return Object.assign({}, DEFAULT_INCUBATOR_PROFILE, { name: row.name, org: row.org, type: row.org_type, bio: row.bio, sectors: row.sectors || [], stages: row.stages || [], supportTypes: row.support_types || [], location: row.location, socials });
-    if (role === "organizer") return Object.assign({}, DEFAULT_ORGANIZER_PROFILE, { name: row.name, org: row.org, type: row.org_type, bio: row.bio, domains: row.domains || [], location: row.location, socials });
-    return Object.assign({}, INTERNAL_USER);
+    const extra = row.extra && typeof row.extra === "object" ? row.extra : {};
+    if (role === "founder") return Object.assign({}, DEFAULT_FOUNDER_PROFILE, { name: row.name, college: row.college, location: row.location, skills: row.skills || [], bio: row.bio, socials: Object.assign({ linkedin: "", twitter: "", github: "" }, socials), startupId: null }, extra);
+    if (role === "investor") return Object.assign({}, DEFAULT_INVESTOR_PROFILE, { name: row.name, org: row.org, title: row.title, bio: row.bio, sectors: row.sectors || [], stages: row.stages || [], ticketSize: row.ticket_size, ticket: row.ticket_size, location: row.location, socials }, extra);
+    if (role === "incubator") return Object.assign({}, DEFAULT_INCUBATOR_PROFILE, { name: row.name, org: row.org, type: row.org_type, orgType: row.org_type, bio: row.bio, description: row.bio, sectors: row.sectors || [], stages: row.stages || [], supportTypes: row.support_types || [], support: row.support_types || [], location: row.location, socials }, extra);
+    if (role === "organizer") return Object.assign({}, DEFAULT_ORGANIZER_PROFILE, { name: row.name, org: row.org, type: row.org_type, orgType: row.org_type, bio: row.bio, about: row.bio, domains: row.domains || [], location: row.location, socials }, extra);
+    return Object.assign({}, INTERNAL_USER, { name: row.name || INTERNAL_USER.name });
+  }
+
+  // The inverse: what to write back to public.profiles. Fields the table has no column
+  // for (focus, website, ...) go to the `extra` jsonb column.
+  function profileToRow(role, p) {
+    const arr = (v) => Array.isArray(v) ? v : [];
+    if (role === "founder") return { cols: { name: p.name || "", college: p.college || "", location: p.location || "", bio: p.bio || "", skills: arr(p.skills), socials: p.socials || {} }, extra: {} };
+    if (role === "investor") return {
+      cols: { name: p.name || "", org: p.org || "", title: p.title || "", bio: p.bio || "", location: p.location || "", sectors: arr(p.sectors), ticket_size: p.ticket || p.ticketSize || "", socials: p.socials || {} },
+      extra: { focus: p.focus || "", stage: p.stage || "", geography: p.geography || "", portfolio: arr(p.portfolio) }
+    };
+    if (role === "incubator") return {
+      cols: { name: p.name || "", org: p.org || "", org_type: p.orgType || p.type || "", bio: p.description || p.bio || "", location: p.location || "", sectors: arr(p.sectors), stages: arr(p.stages), support_types: arr(p.support || p.supportTypes), socials: p.socials || {} },
+      extra: { website: p.website || "", duration: p.duration || "", funding: p.funding || "", equity: p.equity || "" }
+    };
+    if (role === "organizer") return {
+      cols: { name: p.name || "", org: p.org || "", org_type: p.orgType || p.type || "", bio: p.about || p.bio || "", location: p.location || "", domains: arr(p.domains), socials: p.socials || {} },
+      extra: { website: p.website || "" }
+    };
+    return null;
   }
 
   /* ---------------- boot / session ---------------- */
@@ -105,18 +127,21 @@ const Store = (() => {
   }
 
   async function hydrateForProfile(profile) {
-    state.session = { id: profile.id, email: profile.email };
-    state.role = profile.role;
-    state[profile.role] = profileIntoRole(profile.role, profile);
+    const role = profile.role;
+    state = Object.assign(defaults(), { session: { id: profile.id, email: profile.email }, role, accountRole: role });
+    state[role] = profileIntoRole(role, profile);
+    const orgSide = role === "investor" || role === "incubator" || role === "organizer";
 
-    const [myStartups, visible, opps, apps, saved, interested, notifs] = await Promise.all([
-      profile.role === "founder" ? DB.fetchMyStartups(profile.id) : Promise.resolve([]),
-      DB.fetchVisibleStartups(),
+    const [myStartups, visible, opps, apps, saved, interested, notifs, mpFounders, founderProfiles] = await Promise.all([
+      role === "founder" ? DB.fetchMyStartups(profile.id) : Promise.resolve([]),
+      role === "founder" ? Promise.resolve([]) : DB.fetchVisibleStartups(role),
       DB.fetchOpportunities(),
-      DB.fetchApplications(),
+      DB.fetchApplications(role),
       DB.fetchSaved(profile.id),
       DB.fetchInterested(profile.id),
-      DB.fetchNotifications(profile.id)
+      DB.fetchNotifications(profile.id),
+      orgSide ? DB.fetchMarketplaceFounders() : Promise.resolve([]),
+      role === "internal" ? DB.fetchFounderProfiles() : Promise.resolve([])
     ]);
 
     const merged = new Map();
@@ -124,9 +149,25 @@ const Store = (() => {
     visible.forEach(r => { if (!merged.has(r.id)) merged.set(r.id, startupFromRow(r)); });
     state.userStartups = [...merged.values()];
 
-    if (profile.role === "founder" && myStartups[0]) {
+    // Attach the founder's public details to each startup (the pages read startup.founder.*).
+    const founderByStartup = new Map();
+    mpFounders.forEach(f => founderByStartup.set(f.startup_id, f));
+    const founderById = new Map();
+    founderProfiles.forEach(f => founderById.set(f.id, f));
+    state.userStartups.forEach(s => {
+      let f = null;
+      if (role === "founder" && s.founderId === profile.id) f = profile;
+      else if (founderByStartup.has(s.id)) f = founderByStartup.get(s.id);
+      else if (founderById.has(s.founderId)) f = founderById.get(s.founderId);
+      s.founder = {
+        name: (f && f.name) || "Founder", college: (f && f.college) || "", location: (f && f.location) || "",
+        bio: (f && f.bio) || "", skills: (f && f.skills) || [], socials: (f && f.socials) || {}
+      };
+    });
+
+    if (role === "founder" && myStartups[0]) {
       state.founder.startupId = myStartups[0].id;
-      state.founder.workspace = myStartups[0].workspace || Object.assign({}, DEFAULT_WORKSPACE);
+      state.founder.workspace = Object.assign({}, DEFAULT_WORKSPACE, myStartups[0].workspace || {});
     }
 
     state.opportunities = opps.map(oppFromRow);
@@ -135,11 +176,7 @@ const Store = (() => {
     state.interested = interested;
     state.notifications = notifs.map(n => ({ id: n.id, text: n.text, read: n.read, time: new Date(n.created_at).toLocaleString() }));
 
-    const convStartupIds = new Set([
-      ...(profile.role === "founder" ? myStartups.map(s => s.id) : []),
-      ...interested
-    ]);
-    await Promise.all([...convStartupIds].map(sid => loadConversation(sid)));
+    await loadConversations();
   }
 
   function reset() { return DB.signOut().then(init); }
@@ -147,7 +184,10 @@ const Store = (() => {
   /* ---------------- authentication ---------------- */
 
   const getRole = () => state.role;
-  const setRole = (r) => { state.role = r; };
+  // The view role can only ever be the account's own role. (It used to be freely switchable,
+  // which let any account open the internal reviewer screens; the database refused the actions,
+  // but the screens should not open at all.)
+  const setRole = (r) => { if (r && r === state.accountRole) state.role = r; };
   const founder = () => state.founder;
   const investor = () => state.investor;
   const incubator = () => state.incubator;
@@ -165,18 +205,19 @@ const Store = (() => {
     if (state.role === "organizer") return state.organizer.org;
     return state.investor.org;
   };
-  const sessionUser = () => state.session ? { email: state.session.email, role: state.role } : null;
+  const sessionUser = () => state.session ? { email: state.session.email, role: state.accountRole } : null;
 
   // role: 'founder' | 'investor' | 'incubator' | 'organizer'. Never 'internal' —
   // that role can only be granted later by the project owner directly in the
-  // Supabase dashboard (see bottom of supabase/schema.sql). This is what
-  // closes P0-3: there is no client-reachable path to an admin account.
-  const registerAccount = async (email, password, role, profileFields) => {
-    const res = await DB.signUp(email, password, role, profileFields);
+  // Supabase dashboard (see SUPABASE_SETUP.md). There is no client-reachable path to an admin account.
+  // `startup` (founders only) is created together with the profile by the database trigger.
+  // Resolves { ok:true, needsConfirmation:true } when the project requires email confirmation.
+  const registerAccount = async (email, password, role, profileFields, startup) => {
+    const res = await DB.signUp(email, password, role, profileFields, startup);
     if (!res.ok) return res;
-    const profile = await DB.fetchProfile(res.userId);
-    await hydrateForProfile(profile);
-    return { ok: true, profile };
+    if (res.needsConfirmation) return { ok: true, needsConfirmation: true };
+    await hydrateForProfile(res.profile);
+    return { ok: true, profile: res.profile };
   };
 
   const login = async (email, password) => {
@@ -192,7 +233,7 @@ const Store = (() => {
   const adminLogin = async (email, password) => {
     const res = await login(email, password);
     if (!res.ok) return res;
-    if (state.role !== "internal") {
+    if (state.accountRole !== "internal") {
       await signOut();
       return { ok: false, err: "This account does not have internal reviewer access." };
     }
@@ -201,7 +242,8 @@ const Store = (() => {
 
   const signOut = async () => { await DB.signOut(); state = defaults(); };
 
-  /* new founder's startup, created in Postgres */
+  /* An extra / fallback startup for a founder, created in Postgres (the first one is normally
+     created together with the profile by the signup trigger). */
   const addUserStartup = async (data) => {
     const row = await DB.createStartup({
       founder_id: state.session.id,
@@ -237,6 +279,22 @@ const Store = (() => {
     return "pending";
   };
 
+  /* ---------------- profile ---------------- */
+  // Persist the signed-in user's profile (the pages mutate Store.founder()/investor()/... then call this).
+  // Previously Store.save() did not exist, so saving a profile threw and nothing reached the database.
+  const save = async () => {
+    if (!state.session) return;
+    const mapped = profileToRow(state.accountRole, state[state.accountRole]);
+    if (!mapped) return;
+    try {
+      await DB.updateProfile(state.session.id, Object.assign({}, mapped.cols, { extra: mapped.extra }));
+    } catch (e) {
+      if (!/extra/i.test(e.message || "")) throw e;
+      // Database has not had supabase/hardening.sql run yet (no `extra` column): save the core fields.
+      await DB.updateProfile(state.session.id, mapped.cols);
+    }
+  };
+
   /* ---------------- workspace ---------------- */
   const workspace = () => state.founder.workspace;
   const updateWorkspace = async (key, value) => {
@@ -254,46 +312,80 @@ const Store = (() => {
   };
 
   /* ---------------- investor lists ---------------- */
+  // Optimistic update, rolled back if the database refuses (so the UI never shows a state the server rejected).
   const isSaved = (id) => state.saved.includes(id);
   const toggleSaved = async (id) => {
-    if (isSaved(id)) { state.saved = state.saved.filter(x => x !== id); await DB.removeSaved(state.session.id, id); }
-    else { state.saved = [...state.saved, id]; await DB.addSaved(state.session.id, id); }
+    const was = isSaved(id);
+    state.saved = was ? state.saved.filter(x => x !== id) : [...state.saved, id];
+    try { if (was) await DB.removeSaved(state.session.id, id); else await DB.addSaved(state.session.id, id); }
+    catch (e) { state.saved = was ? [...state.saved, id] : state.saved.filter(x => x !== id); throw e; }
     return isSaved(id);
   };
   const isInterested = (id) => state.interested.includes(id);
   const toggleInterested = async (id) => {
-    if (isInterested(id)) { state.interested = state.interested.filter(x => x !== id); await DB.removeInterested(state.session.id, id); }
-    else {
-      state.interested = [...state.interested, id];
-      await DB.addInterested(state.session.id, id);
-      const s = getStartup(id);
-      if (s && !state.messages[id]) {
-        await loadConversation(id);
-      }
-    }
+    const was = isInterested(id);
+    state.interested = was ? state.interested.filter(x => x !== id) : [...state.interested, id];
+    try { if (was) await DB.removeInterested(state.session.id, id); else await DB.addInterested(state.session.id, id); }
+    catch (e) { state.interested = was ? [...state.interested, id] : state.interested.filter(x => x !== id); throw e; }
+    if (!was) ensureConversation(id);
     return isInterested(id);
   };
   const removeFromQueue = (id) => { state.queue = state.queue.filter(x => x !== id); };
 
-  /* ---------------- messaging ---------------- */
-  async function loadConversation(startupId) {
-    const s = getStartup(startupId);
-    if (!s) return null;
-    const rows = await DB.fetchMessages(startupId);
-    state.messages[startupId] = {
-      startupId,
-      partner: { name: s.founder ? s.founder.name : s.name, role: "Founder, " + s.name },
-      items: rows.map(r => ({ from: r.sender_id === state.session.id ? "me" : "partner", text: r.body, time: new Date(r.created_at).toLocaleString() }))
-    };
-    return state.messages[startupId];
+  /* ---------------- messaging ----------------
+     One thread per (startup, investor/incubator). The investor/incubator's own thread is keyed by
+     the startup id; a founder has one thread per interested participant, keyed "<startupId>~<participantId>".
+     Who may read or write which thread is enforced by RLS on public.messages, not here. */
+  function mapMessage(r) {
+    return { from: r.sender_id === state.session.id ? "me" : "partner", text: r.body, time: new Date(r.created_at).toLocaleString() };
   }
+  function orgThread(startupId) {
+    const s = getStartup(startupId);
+    return {
+      key: startupId, startupId, participantId: state.session.id,
+      partner: { name: s && s.founder ? s.founder.name : "Founder", role: "Founder, " + (s ? s.name : "") },
+      items: []
+    };
+  }
+  function ensureConversation(startupId) {
+    if (state.accountRole !== "founder" && !state.messages[startupId]) state.messages[startupId] = orgThread(startupId);
+  }
+  async function loadConversations() {
+    const me = state.session.id;
+    const role = state.accountRole;
+    const convs = {};
+    if (role === "founder") {
+      const mine = state.userStartups.filter(s => s.founderId === me);
+      const [rows, parts] = await Promise.all([DB.fetchMessages(mine.map(s => s.id)), DB.fetchThreadParticipants()]);
+      const mk = (sid, pid, name, sub) => ({ key: sid + "~" + pid, startupId: sid, participantId: pid, partner: { name: name || "Investor", role: sub || "Investor / ecosystem partner" }, items: [] });
+      parts.forEach(p => { convs[p.startup_id + "~" + p.participant_id] = mk(p.startup_id, p.participant_id, p.name || p.org, [p.title, p.org].filter(Boolean).join(", ")); });
+      rows.forEach(r => {
+        if (!r.participant_id) return; // messages from before threads existed have no recipient
+        const key = r.startup_id + "~" + r.participant_id;
+        if (!convs[key]) convs[key] = mk(r.startup_id, r.participant_id);
+        convs[key].items.push(mapMessage(r));
+      });
+    } else if (role === "investor" || role === "incubator") {
+      state.messages = {};
+      state.interested.forEach(sid => { if (getStartup(sid)) convs[sid] = orgThread(sid); });
+      const rows = state.interested.length ? await DB.fetchMessages(state.interested) : [];
+      rows.forEach(r => { if (r.participant_id === me && convs[r.startup_id]) convs[r.startup_id].items.push(mapMessage(r)); });
+    }
+    state.messages = convs;
+  }
+  // Re-fetch threads (used by the messaging page's poll); resolves to a signature that changes when anything new arrives.
+  const refreshMessages = async () => {
+    await loadConversations();
+    return Object.values(state.messages).map(c => c.key + ":" + c.items.length).join("|");
+  };
   const conversations = () => state.messages;
   const getConversation = (id) => state.messages[id] || null;
-  const sendMessage = async (convId, text) => {
-    const row = await DB.sendMessage(convId, state.session.id, text);
-    if (!state.messages[convId]) await loadConversation(convId);
-    state.messages[convId].items.push({ from: "me", text: row.body, time: new Date(row.created_at).toLocaleString() });
-    return state.messages[convId];
+  const sendMessage = async (convKey, text) => {
+    const conv = state.messages[convKey];
+    if (!conv) throw new Error("This conversation is no longer available.");
+    const row = await DB.sendMessage(conv.startupId, state.session.id, conv.participantId, text);
+    conv.items.push(mapMessage(row));
+    return conv;
   };
 
   /* ---------------- notifications ---------------- */
@@ -444,15 +536,24 @@ const Store = (() => {
   };
   const closeOpportunity = (id) => updateOpportunity(id, { status: "closed" });
   const reopenOpportunity = (id) => updateOpportunity(id, { status: "published" });
+  // Views are counted once per opportunity per page load (the detail page re-renders often),
+  // and only through the server-side counter functions: nobody can write the counters directly.
+  const viewed = new Set();
   const incrementViews = async (id) => {
+    if (viewed.has(id)) return;
+    viewed.add(id);
     const o = state.opportunities.find(x => x.id === id);
-    if (o) { o.views = (o.views || 0) + 1; await DB.updateOpportunity(id, { views: o.views }); }
+    if (!o || o.ownerId === state.session.id) return;
+    o.views = (o.views || 0) + 1;
+    try { await DB.incrementOpportunityViews(id); } catch (e) { console.warn("view not counted:", e.message); }
   };
   const recordExternalApplicationClick = async (id) => {
     const o = state.opportunities.find(x => x.id === id);
     if (!o) return null;
-    o.applicationLinkClicks = (o.applicationLinkClicks || 0) + 1;
-    await DB.updateOpportunity(id, { application_link_clicks: o.applicationLinkClicks });
+    try {
+      const n = await DB.recordApplicationClick(id);
+      o.applicationLinkClicks = typeof n === "number" ? n : (o.applicationLinkClicks || 0) + 1;
+    } catch (e) { console.warn("click not counted:", e.message); }
     return o.applicationLinkClicks;
   };
   const externalApplicationsForStartup = () => []; // click tracking now lives on the opportunity row itself
@@ -598,14 +699,14 @@ const Store = (() => {
 
   return {
     get state() { return state; },
-    init, reset,
+    init, reset, save,
     getRole, setRole, founder, investor, incubator, organizer, internal, me, org,
     sessionUser, registerAccount, login, adminLogin, signOut, addUserStartup,
     myStartup, getStartup,
     stageIdx, setStageIdx, advanceStage, stageState,
     workspace, updateWorkspace, workspaceCompletion,
     isSaved, toggleSaved, isInterested, toggleInterested, removeFromQueue,
-    conversations, getConversation, sendMessage, loadConversation,
+    conversations, getConversation, sendMessage, refreshMessages,
     notifications, unreadCount, markNotifsRead,
     reviewResults, setReviewResult,
     runQualityChecks,

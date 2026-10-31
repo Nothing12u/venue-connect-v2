@@ -1,5 +1,5 @@
 /* ============================================================
-   VENTURE CONNECT  Production Data Models
+   VENTURE CONNECT — Production Data Models
    All data structures for the Venture Connect platform.
    ============================================================ */
 
@@ -18,12 +18,12 @@ const GATE_STAGES = [
 const WORKSPACE_SECTIONS = [
   { key: "problem",        label: "Problem",            q: "What problem are you solving?",                        hint: "Describe the problem in real-world terms. Who feels it, how often, and how painful is it?" },
   { key: "solution",       label: "Solution",           q: "How does your product solve this problem?",            hint: "Explain your product, how it works, and why it removes the pain." },
-  { key: "targetCustomer", label: "Target Customer",    q: "Who specifically experiences this problem?",           hint: "Name the exact segment  not 'everyone'. Include who, where, and how they behave." },
+  { key: "targetCustomer", label: "Target Customer",    q: "Who specifically experiences this problem?",           hint: "Name the exact segment — not 'everyone'. Include who, where, and how they behave." },
   { key: "market",         label: "Market",             q: "What market are you targeting?",                       hint: "Sizing, geography, and growth of the market you plan to serve." },
   { key: "businessModel",  label: "Business Model",     q: "How will your startup make money?",                    hint: "Pricing, revenue streams, and unit economics at a high level." },
   { key: "validation",     label: "Validation",         q: "What evidence do you have that this problem exists?",  hint: "Interviews, surveys, pilots, waitlists, letters of intent, or early revenue." },
   { key: "competition",    label: "Competition",        q: "Who already solves this problem?",                     hint: "Direct competitors, indirect alternatives, and the status quo." },
-  { key: "advantage",      label: "Competitive Advantage", q: "Why is your solution different?",                   hint: "What defensible edge do you have  technology, access, data, or distribution?" },
+  { key: "advantage",      label: "Competitive Advantage", q: "Why is your solution different?",                   hint: "What defensible edge do you have — technology, access, data, or distribution?" },
   { key: "funding",        label: "Funding",            q: "How much funding are you seeking?",                    hint: "Amount and instrument, e.g. $150K pre-seed SAFE." },
   { key: "useOfFunds",     label: "Use of Funds",       q: "How will you use the funding?",                        hint: "Break down allocation: team, product, pilots, go-to-market, buffer." }
 ];
@@ -37,7 +37,7 @@ const INDUSTRIES = ["AI", "AgriTech", "FinTech", "HealthTech", "EdTech", "Climat
 const STARTUP_STAGES = ["Idea Stage", "Prototype", "MVP", "Early Revenue"];
 const INVESTOR_SECTORS = ["AI", "FinTech", "AgriTech", "HealthTech", "EdTech", "ClimateTech", "DeepTech", "SaaS", "Consumer", "Hardware", "Robotics", "Other"];
 const INVESTOR_STAGES = ["Idea Stage", "Pre-Seed", "Seed", "Series A", "Series B+", "MVP Stage", "Early Revenue"];
-const TICKET_SIZES = ["$1K$10K", "$10K$50K", "$50K$100K", "$100K+", "Custom"];
+const TICKET_SIZES = ["$1K–$10K", "$10K–$50K", "$50K–$100K", "$100K+", "Custom"];
 const GEOGRAPHIES = ["India", "Andhra Pradesh", "South India", "India + Global", "Global"];
 const INCUBATOR_ORG_TYPES = ["College Incubator", "Government Incubator", "Private Incubator", "University Incubator", "Corporate Incubator", "Independent Incubator"];
 const INCUBATOR_SECTORS = ["AI", "AgriTech", "FinTech", "HealthTech", "Health", "EdTech", "ClimateTech", "DeepTech", "SaaS", "Hardware", "Other"];
@@ -48,15 +48,8 @@ const HACKATHON_DOMAINS = ["AI", "Web Development", "Hardware", "Robotics", "Fin
 const AUTH_LOCATIONS = ["India", "Global", "Other"];
 
 const OPP_CATEGORIES = ["Incubators", "Accelerators", "Investors", "Hackathons", "Competitions", "Grants", "Startup Programs"];
-const OPP_TYPES = [
-  ["Incubators", "Incubator"],
-  ["Accelerators", "Accelerator"],
-  ["Investors", "Investor"],
-  ["Hackathons", "Hackathon"],
-  ["Competitions", "Competition"],
-  ["Grants", "Grant"],
-  ["Startup Programs", "Startup Program"]
-];
+// (OPP_TYPES lives in pages-investor.js, where the opportunity form uses it. It was declared here too,
+// which made the browser refuse to run pages-investor.js at all.)
 
 /* ============================================================
    INTERNAL VENTURE CONNECT REVIEW SYSTEM

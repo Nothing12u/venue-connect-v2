@@ -21,9 +21,9 @@ function founderQualityGate() {
       ? '<div class="glass-strong card" style="padding:22px 24px;margin-bottom:18px">' +
           '<div class="row-between" style="flex-wrap:wrap;gap:12px;margin-bottom:14px">' +
             '<div class="row" style="gap:12px"><span class="card-title-ic green" style="width:38px;height:38px">' + Icon("send", 17) + '</span>' +
-            '<div><div class="semibold" style="font-size:15px">' + (opp ? opp.title : "Application") + '</div>' +
-            '<div class="tiny faint">' + (opp ? opp.org : "") + ' · Applied ' + app.submitted + ' · Last update ' + app.lastUpdate + '</div></div></div>' +
-            '<div style="text-align:right"><div class="tiny faint semibold">CURRENT STAGE</div><div class="semibold" style="color:var(--accent-deep)">' + stage.name + '</div></div>' +
+            '<div><div class="semibold" style="font-size:15px">' + (opp ? esc(opp.title) : "Application") + '</div>' +
+            '<div class="tiny faint">' + (opp ? esc(opp.org) : "") + ' · Applied ' + app.submitted + ' · Last update ' + app.lastUpdate + '</div></div></div>' +
+            '<div style="text-align:right"><div class="tiny faint semibold">CURRENT STAGE</div><div class="semibold" style="color:var(--accent-deep)">' + esc(stage.name) + '</div></div>' +
           '</div>' +
           statusStrip(app) +
         '</div>'
@@ -39,7 +39,7 @@ function founderQualityGate() {
         '<div class="card-header"><div class="h3"><span class="card-title-ic">' + Icon("layers", 17) + '</span>Your applications</div>' +
         '<button class="btn btn-ghost btn-sm" onclick="App.navigate(\'#/founder/applications\')">View all</button></div>' +
         (app
-          ? '<div class="app-status-row"><div class="asr-main"><div class="semibold" style="font-size:13.5px">' + (opp ? opp.title : "Application") + '</div><div class="tiny faint">' + (opp ? opp.org : "") + '</div></div>' +
+          ? '<div class="app-status-row"><div class="asr-main"><div class="semibold" style="font-size:13.5px">' + (opp ? esc(opp.title) : "Application") + '</div><div class="tiny faint">' + (opp ? esc(opp.org) : "") + '</div></div>' +
             '<span class="badge badge-indigo">' + st.label + '</span></div>' +
             '<div class="row" style="margin-top:12px">' +
               '<button class="btn btn-soft btn-sm" onclick="App.navigate(\'#/founder/application/' + app.id + '\')">' + Icon("eye", 13) + 'View Details</button>' +
@@ -83,7 +83,7 @@ function founderPitchReview() {
         '<div class="glass card">' +
           '<div class="card-header"><div class="h3"><span class="card-title-ic amber">' + Icon("message", 17) + '</span>Reviewer feedback</div></div>' +
           (app && app.pitch && app.pitch.notes
-            ? '<div class="small muted" style="padding:12px 14px;border-radius:12px;background:var(--accent-softer);border:1px solid rgba(99,102,241,.15)">' + app.pitch.notes + '</div>'
+            ? '<div class="small muted" style="padding:12px 14px;border-radius:12px;background:var(--accent-softer);border:1px solid rgba(99,102,241,.15)">' + esc(app.pitch.notes) + '</div>'
             : '<p class="muted small">Feedback will appear here after the review completes.</p>') +
         '</div>' +
         '<div class="glass card">' +
@@ -126,7 +126,7 @@ function founderInterview() {
         '<div class="glass card">' +
           '<div class="card-header"><div class="h3"><span class="card-title-ic blue">' + Icon("calendar", 17) + '</span>Interview</div></div>' +
           (intv.scheduled
-            ? '<div class="row" style="gap:16px"><div style="text-align:center;padding:13px 16px;border-radius:15px;background:linear-gradient(135deg,var(--accent-2),var(--accent-deep));color:#fff"><div class="tiny semibold" style="opacity:.85">' + intv.scheduled.split("·")[0].trim() + '</div><div class="tiny semibold" style="opacity:.85">' + (intv.scheduled.split("·")[1] || "").trim() + '</div></div>' +
+            ? '<div class="row" style="gap:16px"><div style="text-align:center;padding:13px 16px;border-radius:15px;background:linear-gradient(135deg,var(--accent-2),var(--accent-deep));color:#fff"><div class="tiny semibold" style="opacity:.85">' + esc(intv.scheduled.split("·")[0].trim()) + '</div><div class="tiny semibold" style="opacity:.85">' + esc((intv.scheduled.split("·")[1] || "").trim()) + '</div></div>' +
               '<div class="col"><div class="semibold small">45-minute video call</div><div class="tiny faint">Venture Connect review team</div></div></div>'
             : '<p class="muted small">Scheduling details will appear here.</p>') +
         '</div>' +
@@ -140,7 +140,7 @@ function founderInterview() {
       '<div class="glass card">' +
         '<div class="card-header"><div class="h3"><span class="card-title-ic amber">' + Icon("edit", 17) + '</span>Interview notes</div></div>' +
         (intv.notes
-          ? '<div class="small muted" style="padding:12px 14px;border-radius:12px;background:rgba(255,255,255,.6);border:1px solid var(--hairline)">' + intv.notes + '</div>'
+          ? '<div class="small muted" style="padding:12px 14px;border-radius:12px;background:rgba(255,255,255,.6);border:1px solid var(--hairline)">' + esc(intv.notes) + '</div>'
           : '<p class="muted small">Notes will appear here after the interview.</p>') +
         '<div class="divider"></div>' +
         '<div class="h3" style="font-size:14px;margin-bottom:8px">Next stage</div>' +
@@ -177,12 +177,12 @@ function founderValidation() {
         return '<div class="glass card" style="padding:20px">' +
           '<div class="row-between" style="flex-wrap:wrap;gap:10px">' +
             '<div class="row" style="gap:13px"><span class="card-title-ic ' + (st === "Verified" ? "green" : st === "Needs clarification" ? "amber" : "blue") + '">' + Icon(st === "Verified" ? "verify" : st === "Needs clarification" ? "alert" : "clock", 16) + '</span>' +
-            '<div><div class="semibold" style="font-size:14.5px">' + e.type + '</div><div class="tiny faint">' + e.description + '</div></div></div>' +
+            '<div><div class="semibold" style="font-size:14.5px">' + esc(e.type) + '</div><div class="tiny faint">' + esc(e.description) + '</div></div></div>' +
             evidenceBadge(st) +
           '</div>' +
           '<div style="padding:11px 13px;border-radius:12px;background:rgba(255,255,255,.55);border:1px solid var(--hairline);margin-top:12px">' +
             '<div class="tiny semibold faint" style="letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px">Reviewer notes</div>' +
-            '<div class="small">' + ((app && app.evidenceNotes && app.evidenceNotes[e.type]) || e.notes) + '</div>' +
+            '<div class="small">' + ((app && app.evidenceNotes && app.evidenceNotes[e.type]) || esc(e.notes)) + '</div>' +
           '</div>' +
         '</div>';
       }).join("") +
@@ -226,7 +226,7 @@ function founderReadiness() {
       '<div class="row" style="gap:30px;flex-wrap:wrap">' +
         Ring(s.score, 132, "readiness") +
         '<div style="flex:1;min-width:260px">' +
-          '<div class="h3" style="margin-bottom:4px">' + s.name + ' — overall readiness</div>' +
+          '<div class="h3" style="margin-bottom:4px">' + esc(s.name) + ' — overall readiness</div>' +
           '<p class="muted small" style="margin-bottom:16px">Pre-seed benchmark: 70+ is ready to approach investors; 80+ is competitive against screened peer pipelines.</p>' +
           '<div class="col" style="gap:9px">' + dims.map(d =>
             '<div><div class="row-between"><span class="small semibold">' + d.label + '</span><span class="small mono bold" style="color:var(--accent-deep)">' + s.scoreBreak[d.k] + '</span></div>' + bar(s.scoreBreak[d.k], "thin") + '</div>'
@@ -275,13 +275,13 @@ function founderProfile() {
     '<div class="grid-2" style="grid-template-columns:300px 1fr;align-items:start">' +
       '<div class="glass card" style="text-align:center">' +
         '<div style="display:grid;place-items:center;margin-bottom:12px">' + personAvatar(f.name, 84) + '</div>' +
-        '<div class="semibold" style="font-size:17px">' + f.name + '</div>' +
-        '<div class="small muted">' + f.college + '</div>' +
-        '<div class="small muted">' + f.location + '</div>' +
-        '<div class="row-wrap" style="justify-content:center;margin-top:14px">' + f.skills.map(sk => '<span class="tag">' + sk + '</span>').join("") + '</div>' +
+        '<div class="semibold" style="font-size:17px">' + esc(f.name) + '</div>' +
+        '<div class="small muted">' + esc(f.college) + '</div>' +
+        '<div class="small muted">' + esc(f.location) + '</div>' +
+        '<div class="row-wrap" style="justify-content:center;margin-top:14px">' + f.skills.map(sk => '<span class="tag">' + esc(sk) + '</span>').join("") + '</div>' +
         '<div class="divider"></div>' +
         '<div class="small semibold" style="text-align:left;margin-bottom:8px">Startup</div>' +
-        '<div class="row" style="gap:11px">' + startupLogo(s, 40) + '<div style="text-align:left"><div class="semibold small">' + s.name + '</div><div class="tiny faint">' + s.sector + ' · ' + s.stage + '</div></div></div>' +
+        '<div class="row" style="gap:11px">' + startupLogo(s, 40) + '<div style="text-align:left"><div class="semibold small">' + esc(s.name) + '</div><div class="tiny faint">' + esc(s.sector) + ' · ' + esc(s.stage) + '</div></div></div>' +
       '</div>' +
 
       '<div class="glass card">' +

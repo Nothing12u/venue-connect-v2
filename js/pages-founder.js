@@ -26,6 +26,20 @@ function appNextStep(app) {
   return { text: "Your application is under review by Venture Connect." };
 }
 
+/* Label + colour for an application, as the founder sees it. Used by the dashboard, the
+   application pages, the stage pages and the internal review page (tone: success | warning |
+   danger | indigo | neutral). It was called in nine places but never defined, so those pages
+   threw a ReferenceError as soon as an application existed. */
+function founderAppStatus(app) {
+  if (!app) return { label: "Not submitted", tone: "neutral" };
+  const label = Store.applicationStatus(app);
+  if (label === "Not Approved") return { label, tone: "danger" };
+  if (label === "Approved for Organization Review") return { label, tone: "success" };
+  if (app.needsRevision) return { label: "Needs Revision", tone: "warning" };
+  if (label === "Clarification Requested" || label === "Review Target Reached") return { label, tone: "warning" };
+  return { label, tone: "indigo" };
+}
+
 /* Founder's most relevant application */
 function myTopApp() {
   const apps = Store.applicationsForStartup(Store.founder().startupId);
@@ -93,8 +107,8 @@ function founderDashboard() {
   const oppCards = recOpps.map(o => {
     const external = o.applicationMode === "external" || o.type === "hackathon";
     return '<div class="product-row opportunity-row"><div class="product-row-main">' +
-      '<div class="row-wrap" style="gap:6px"><span class="badge ' + (external ? "badge-info" : "badge-violet") + '">' + (external ? Icon("external", 11) + 'External application' : o.category) + '</span><span class="tag">' + (o.sector || "Other") + '</span></div>' +
-      '<div class="semibold" style="font-size:14px;margin-top:7px">' + o.title + '</div><div class="tiny faint" style="margin-top:3px">' + o.org + ' · Deadline ' + o.deadline + '</div></div>' +
+      '<div class="row-wrap" style="gap:6px"><span class="badge ' + (external ? "badge-info" : "badge-violet") + '">' + (external ? Icon("external", 11) + 'External application' : esc(o.category)) + '</span><span class="tag">' + (esc(o.sector) || "Other") + '</span></div>' +
+      '<div class="semibold" style="font-size:14px;margin-top:7px">' + esc(o.title) + '</div><div class="tiny faint" style="margin-top:3px">' + esc(o.org) + ' · Deadline ' + esc(o.deadline) + '</div></div>' +
       '<button class="btn ' + (external ? "btn-primary" : "btn-soft") + ' btn-sm" onclick="App.navigate(\'#/founder/opportunity/' + o.id + '\')">' + (external ? Icon("external", 13) + 'Apply' : Icon("eye", 13) + 'View') + '</button></div>';
   }).join("");
 
@@ -103,13 +117,13 @@ function founderDashboard() {
     const st = founderAppStatus(a);
     const o = Store.getOpportunity(a.opportunityId);
     return '<div class="app-status-row" style="cursor:pointer" onclick="App.navigate(\'#/founder/application/' + a.id + '\')">' +
-      '<div class="asr-main"><div class="semibold" style="font-size:13.5px">' + (o ? o.title : "Application") + '</div>' +
-      '<div class="tiny faint">' + (o ? o.org + ' · ' : '') + 'Submitted: ' + a.submitted + '</div></div>' +
+      '<div class="asr-main"><div class="semibold" style="font-size:13.5px">' + (o ? esc(o.title) : "Application") + '</div>' +
+      '<div class="tiny faint">' + (o ? esc(o.org) + ' · ' : '') + 'Submitted: ' + a.submitted + '</div></div>' +
       '<span class="badge ' + (st.tone === "success" ? "badge-success" : st.tone === "warning" ? "badge-warning" : st.tone === "danger" ? "badge-danger" : "badge-indigo") + '">' + st.label + '</span>' +
     '</div>';
   }).join("") + externalApps.slice(0, 2).map(a => {
     const o = Store.getOpportunity(a.opportunityId);
-    return o ? '<div class="product-row application-row"><div class="asr-main"><div class="semibold" style="font-size:13.5px">' + o.title + '</div><div class="tiny faint">' + o.org + ' · Link opened ' + a.clickedAt + '</div></div><span class="badge badge-info">' + Icon("external", 11) + 'External application</span></div>' : "";
+    return o ? '<div class="product-row application-row"><div class="asr-main"><div class="semibold" style="font-size:13.5px">' + esc(o.title) + '</div><div class="tiny faint">' + esc(o.org) + ' · Link opened ' + a.clickedAt + '</div></div><span class="badge badge-info">' + Icon("external", 11) + 'External application</span></div>' : "";
   }).join("");
 
   const wsPending = WORKSPACE_SECTIONS.filter(sec => !sectionOk((f.workspace[sec.key] || "").trim().length));
@@ -134,15 +148,15 @@ function founderDashboard() {
         '<div class="row" style="gap:16px">' + startupLogo(s, 48) +
           '<div>' +
             '<div class="small faint semibold">' + Icon("briefcase", 12) + ' CURRENT STARTUP</div>' +
-            '<div style="font-size:19px;font-weight:800;letter-spacing:-0.02em">' + s.name + '</div>' +
-            '<div class="small muted" style="margin-top:2px">' + s.tagline + '</div>' +
-            '<div class="row-wrap" style="margin-top:7px"><span class="tag">' + s.sector + '</span><span class="tag">' + Icon("layers", 11) + ' ' + (s.stage || "Idea Stage") + '</span></div>' +
+            '<div style="font-size:19px;font-weight:800;letter-spacing:-0.02em">' + esc(s.name) + '</div>' +
+            '<div class="small muted" style="margin-top:2px">' + esc(s.tagline) + '</div>' +
+            '<div class="row-wrap" style="margin-top:7px"><span class="tag">' + esc(s.sector) + '</span><span class="tag">' + Icon("layers", 11) + ' ' + (esc(s.stage) || "Idea Stage") + '</span></div>' +
           '</div>' +
         '</div>' +
         '<div style="text-align:right;max-width:300px">' +
           '<div class="tiny faint semibold" style="letter-spacing:.08em">LATEST APPLICATION</div>' +
           (app
-            ? '<div class="semibold" style="font-size:13.5px;margin-top:3px">' + (opp ? opp.title : "—") + '</div>' +
+            ? '<div class="semibold" style="font-size:13.5px;margin-top:3px">' + (opp ? esc(opp.title) : "—") + '</div>' +
               '<span class="badge ' + (appStatus.tone === "success" ? "badge-success" : appStatus.tone === "warning" ? "badge-warning" : appStatus.tone === "danger" ? "badge-danger" : "badge-indigo") + '" style="margin-top:6px;font-size:12.5px;padding:6px 13px">' + Icon("clock", 12) + ' ' + appStatus.label + '</span>' +
               '<div class="tiny faint" style="margin-top:7px">Last update: ' + app.lastUpdate + '</div>'
             : '<div class="muted small" style="margin-top:4px">No applications yet</div>') +
@@ -152,7 +166,7 @@ function founderDashboard() {
 
     '<div class="next-action compact-next ' + na.tone + '">' +
       '<span class="na-ic">' + Icon(na.icon, 21) + '</span>' +
-      '<div style="flex:1;min-width:220px"><div class="tiny faint semibold" style="letter-spacing:.1em">NEXT STEP</div><div class="semibold" style="font-size:15px;margin-top:3px">' + na.title + '</div><div class="small muted" style="margin-top:3px;max-width:540px;line-height:1.5">' + na.desc + '</div></div>' +
+      '<div style="flex:1;min-width:220px"><div class="tiny faint semibold" style="letter-spacing:.1em">NEXT STEP</div><div class="semibold" style="font-size:15px;margin-top:3px">' + esc(na.title) + '</div><div class="small muted" style="margin-top:3px;max-width:540px;line-height:1.5">' + esc(na.desc) + '</div></div>' +
       '<button class="btn btn-primary btn-sm" onclick="App.navigate(\'' + na.route + '\')">' + Icon("arrowR", 14) + na.cta + '</button>' +
     '</div>' +
 
@@ -201,7 +215,7 @@ function founderNextAction(f, s, app, completion) {
   }
   if (!app) {
     const matches = Store.getOpportunities().filter(o => o.status === "published" && o.sector === s.sector).length;
-    return { icon: "briefcase", tone: "green", title: "Apply to matching opportunities", desc: matches ? matches + " open opportunity" + (matches === 1 ? "" : "ies") + " match your " + s.sector + " startup." : "Your workspace is complete. Browse the marketplace to find your first opportunity.", cta: "Explore Opportunities", route: "#/founder/opportunities" };
+    return { icon: "briefcase", tone: "green", title: "Apply to matching opportunities", desc: matches ? matches + " open opportunity" + (matches === 1 ? "" : "ies") + " match your " + esc(s.sector) + " startup." : "Your workspace is complete. Browse the marketplace to find your first opportunity.", cta: "Explore Opportunities", route: "#/founder/opportunities" };
   }
   if (app.needsRevision) {
     return { icon: "alert", tone: "amber", title: "Your application needs revision", desc: "Venture Connect requested changes. Review the feedback, update your workspace, and re-submit.", cta: "Review Feedback", route: "#/founder/application/" + app.id };
@@ -270,9 +284,6 @@ function founderWorkspace() {
   return html;
 }
 
-function escapeHtml(str) {
-  return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-}
 
 function wsSaveIndicator(state) {
   const el = document.getElementById("ws-autosave");
@@ -287,7 +298,7 @@ function checkCard(c, idx) {
   const ic = c.status === "pass" ? "checkCircle" : c.status === "review" ? "eye" : "alert";
   return '<div class="check-item ' + tone + ' fade-up" style="animation-delay:' + (idx * 40) + 'ms">' +
     '<span class="c-ic">' + Icon(ic, 14) + '</span>' +
-    '<div style="flex:1"><div class="c-title">' + c.title +
+    '<div style="flex:1"><div class="c-title">' + esc(c.title) +
       (c.section !== "links" && c.section !== "eligibility" ? '<span class="tag">' + c.label + '</span>' : '') +
       '<span class="badge ' + (c.status === "pass" ? "badge-success" : c.status === "review" ? "badge-info" : "badge-warning") + '" style="margin-left:auto">' +
       (c.status === "pass" ? "Pass" : c.status === "review" ? "Manual review" : "Action needed") + '</span></div>' +
@@ -355,8 +366,8 @@ function founderApplications() {
     const opp = Store.getOpportunity(app.opportunityId);
     const st = founderAppStatus(app);
     return '<div class="app-status-row">' +
-      '<div class="asr-main"><div class="semibold" style="font-size:14px">' + (opp ? opp.title : "Opportunity") + '</div>' +
-      '<div class="tiny faint">' + (opp ? opp.org : "") + ' · Submitted: ' + app.submitted + ' · Last update ' + app.lastUpdate + '</div></div>' +
+      '<div class="asr-main"><div class="semibold" style="font-size:14px">' + (opp ? esc(opp.title) : "Opportunity") + '</div>' +
+      '<div class="tiny faint">' + (opp ? esc(opp.org) : "") + ' · Submitted: ' + app.submitted + ' · Last update ' + app.lastUpdate + '</div></div>' +
       '<span class="badge ' + (st.tone === "success" ? "badge-success" : st.tone === "warning" ? "badge-warning" : st.tone === "danger" ? "badge-danger" : "badge-indigo") + '">' + st.label + '</span>' +
       '<button class="btn btn-soft btn-sm" onclick="App.navigate(\'#/founder/application/' + app.id + '\')">' + Icon("eye", 13) + 'View Status</button>' +
     '</div>';
@@ -364,8 +375,8 @@ function founderApplications() {
     const opp = Store.getOpportunity(activity.opportunityId);
     if (!opp) return "";
     return '<div class="app-status-row">' +
-      '<div class="asr-main"><div class="semibold" style="font-size:14px">' + opp.title + '</div>' +
-      '<div class="tiny faint">' + opp.org + ' · Hackathon · Application link opened ' + activity.clickedAt + '</div></div>' +
+      '<div class="asr-main"><div class="semibold" style="font-size:14px">' + esc(opp.title) + '</div>' +
+      '<div class="tiny faint">' + esc(opp.org) + ' · Hackathon · Application link opened ' + activity.clickedAt + '</div></div>' +
       '<span class="badge badge-info">' + Icon("external", 12) + 'External application</span>' +
       '<button class="btn btn-soft btn-sm" onclick="App.navigate(\'#/founder/opportunity/' + opp.id + '\')">' + Icon("external", 13) + 'Open Opportunity</button>' +
     '</div>';
@@ -418,13 +429,13 @@ function founderApplicationDetail(id) {
     '<div class="glass-strong card" style="padding:24px;margin-bottom:18px">' +
       '<div class="row-between" style="flex-wrap:wrap;gap:14px">' +
         '<div class="row" style="gap:15px">' + startupLogo(s, 48) +
-          '<div><div style="font-size:18px;font-weight:800">' + (opp ? opp.title : "Application") + '</div>' +
-          '<div class="small muted" style="margin-top:3px">' + (opp ? opp.org : "") + ' · ' + s.name + ' · ' + s.sector + '</div>' +
+          '<div><div style="font-size:18px;font-weight:800">' + (opp ? esc(opp.title) : "Application") + '</div>' +
+          '<div class="small muted" style="margin-top:3px">' + (opp ? esc(opp.org) : "") + ' · ' + esc(s.name) + ' · ' + esc(s.sector) + '</div>' +
           '<div class="small muted">Submitted: ' + app.submitted + ' · Last update ' + app.lastUpdate + ' · Version ' + (app.currentVersion || 1) + '</div></div>' +
         '</div>' +
         '<div style="text-align:right"><div class="tiny faint semibold" style="letter-spacing:.08em">CURRENT STAGE</div>' +
-        '<div class="semibold" style="font-size:16px;color:var(--accent-deep)">' + stage.name + '</div>' +
-        '<div class="tiny faint" style="margin-top:2px">Stage ' + (app.stage + 1) + ' of ' + INTERNAL_STAGES.length + '</div></div>' +
+        '<div class="semibold" style="font-size:16px;color:var(--accent-deep)">' + esc(stage.name) + '</div>' +
+        '<div class="tiny faint" style="margin-top:2px">Stage ' + (esc(app.stage) + 1) + ' of ' + INTERNAL_STAGES.length + '</div></div>' +
       '</div>' +
     '</div>' + lifecycleNotice + clarification +
 
@@ -460,7 +471,7 @@ function founderApplicationDetail(id) {
           ? '<div class="col" style="gap:11px">' + feedback.map(fb =>
               '<div style="padding:13px 15px;border-left:3px solid var(--' + (fb[2] === "green" ? "success" : fb[2]) + ');border-radius:0 13px 13px 0;background:rgba(255,255,255,.55)">' +
                 '<div class="small semibold" style="color:var(--' + (fb[2] === "green" ? "success" : fb[2]) + ')">' + fb[0] + '</div>' +
-                '<div class="small muted" style="margin-top:3px">' + fb[1] + '</div></div>'
+                '<div class="small muted" style="margin-top:3px">' + esc(fb[1]) + '</div></div>'
             ).join("") + '</div>'
           : '<p class="muted small">No feedback yet. It will appear here as Venture Connect progresses through its review.</p>') +
       '</div>' +
