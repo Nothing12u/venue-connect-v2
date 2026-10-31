@@ -100,4 +100,11 @@ npm test
 - Browsers log a harmless "Refused to execute inline event handler" message on each click.
   The strict CSP blocks the inline `onclick` attribute, and `js/events.js` then runs the
   same handler itself. Nothing is lost; it only adds console noise.
+- Supabase's security advisor reports "Security Definer View" for `marketplace_founders`,
+  `org_applications` and `thread_participants`. This is intentional: the views have to read
+  tables the caller cannot read directly (founder names, application rows without review
+  notes, who is interested). Each one filters by `auth.uid()` and the caller's role, and
+  logged-out visitors cannot select from any of them. The advisor's "SECURITY DEFINER function
+  executable" warnings for the review RPCs and RLS helpers are also intended: those functions
+  check the caller's role themselves.
 - Bundling and minification are not done (no build step by design).

@@ -558,3 +558,35 @@ grant execute on function public.reject_application(text) to authenticated;
 -- set_application_gate only ever moves a startup to 'passed' / 'rejected'; make
 -- a re-decision on a different application of the same startup consistent.
 -- (No change needed to the function body; privileges above are the fix.)
+
+-- ---------------------------------------------------------------
+-- 9. Helper functions
+--    - user_interested_in() only answers about yourself, or for a startup you own
+--      (it used to let any signed-in user ask whether anyone else was interested).
+--    - Logged-out visitors can no longer call the helpers through the API.
+--    - A fixed search_path on every function that did not have one.
+-- ---------------------------------------------------------------
+create or replace function public.user_interested_in(p_user uuid, p_startup text)
+returns boolean language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.interested_startups where user_id = p_user and startup_id = p_startup)
+     and (p_user = auth.uid() or public.is_startup_founder(p_startup) or public.is_internal());
+$$;
+
+revoke execute on function public.current_role_name() from public, anon;
+revoke execute on function public.is_startup_founder(text) from public, anon;
+revoke execute on function public.startup_is_passed(text) from public, anon;
+revoke execute on function public.user_interested_in(uuid, text) from public, anon;
+revoke execute on function public.is_internal() from public, anon;
+grant execute on function public.current_role_name() to authenticated;
+grant execute on function public.is_startup_founder(text) to authenticated;
+grant execute on function public.startup_is_passed(text) to authenticated;
+grant execute on function public.user_interested_in(uuid, text) to authenticated;
+grant execute on function public.is_internal() to authenticated;
+
+alter function public.is_trusted_session() set search_path = public;
+alter function public.jsonb_text_array(jsonb) set search_path = public;
+alter function public.prevent_role_escalation() set search_path = public;
+alter function public.protect_startup_gate_fields() set search_path = public;
+alter function public.protect_opportunity_fields() set search_path = public;
+alter function public.force_application_defaults() set search_path = public;
+alter function public.protect_application_review_fields() set search_path = public;

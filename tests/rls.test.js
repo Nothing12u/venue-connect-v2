@@ -70,6 +70,8 @@ test("row level security blocks the attacks from the review", { skip: !PGlite &&
   rec("another investor cannot post into I1's thread", await as(I2, "i2@x.com", async () => !!(await fails(() => q("insert into messages(startup_id,sender_id,participant_id,body) values ($1,$2,$3,'hi')", [S1, I2, I1])))));
   rec("I2 (not interested) cannot start a thread", await as(I2, "i2@x.com", async () => !!(await fails(() => q("insert into messages(startup_id,sender_id,participant_id,body) values ($1,$2,$2,'hi')", [S1, I2])))));
   rec("founder can read and reply in the thread", await as(F1, "f1@x.com", async () => { const r = (await q("select * from messages")).rows.length === 1; await q("insert into messages(startup_id,sender_id,participant_id,body) values ($1,$2,$3,'reply')", [S1, F1, I1]); return r; }));
+  rec("signed-in user cannot probe whether another user is interested", await as(I2, "i2@x.com", async () => (await q("select user_interested_in($1,$2) r", [I1, S1])).rows[0].r === false));
+  rec("logged-out visitor cannot call the helper functions", await as(null, "", async () => !!(await fails(() => q("select is_internal()")))));
 
   // --- gate bypasses ---
   rec("founder cannot INSERT a startup already 'passed'", await as(F2, "f2@x.com", async () => !!(await fails(() => q("insert into startups(founder_id,name,quality_gate,score) values ($1,'Fake','passed',100)", [F2])))));
