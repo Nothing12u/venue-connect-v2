@@ -198,8 +198,28 @@
     }
   }
 
+  // True when the browser executes inline onclick attributes (no CSP blocking them).
+  function inlineHandlersWork(doc, win) {
+    try {
+      if (!win || !doc.documentElement || typeof doc.createElement !== "function") return false;
+      win.__vcInlineProbe = false;
+      const el = doc.createElement("span");
+      el.setAttribute("onclick", "window.__vcInlineProbe=true");
+      doc.documentElement.appendChild(el);
+      el.click();
+      doc.documentElement.removeChild(el);
+      const ok = win.__vcInlineProbe === true;
+      try { delete win.__vcInlineProbe; } catch (e) { win.__vcInlineProbe = undefined; }
+      return ok;
+    } catch (e) { return false; }
+  }
+
   // scope = { objects: { App }, globals: { closeModal, togglePwVis }, history, window, onError }
   function install(doc, scope) {
+    // Where no CSP blocks inline handlers (e.g. a host that ignores netlify.toml), the browser
+    // already runs every onclick="..." itself. Running it again here would fire each handler
+    // twice (a chip would toggle on and straight back off), so stand down in that case.
+    if (inlineHandlersWork(doc, scope.window)) return;
     ["click", "input", "change", "keydown"].forEach(type => {
       doc.addEventListener(type, ev => dispatch(ev, type, scope), false);
     });

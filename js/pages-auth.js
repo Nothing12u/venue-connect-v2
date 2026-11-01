@@ -192,7 +192,9 @@ const AUTH_FLOWS = {
   }
 };
 
-function renderSignup(role) {
+// keepScroll: true when only a choice inside the form changed (a chip), so the page must not jump to the top.
+function renderSignup(role, keepScroll) {
+  const prevY = window.scrollY;
   if (authRole !== role) { authRole = role; authStep = 0; authDraft = {}; }
   const flow = AUTH_FLOWS[role];
   if (!flow) { renderAuth(); return; }
@@ -245,7 +247,7 @@ function renderSignup(role) {
     '</div>';
 
   document.getElementById("app").innerHTML = html;
-  window.scrollTo(0, 0);
+  window.scrollTo(0, keepScroll ? prevY : 0);
 }
 
 function authSummary(role, flow) {

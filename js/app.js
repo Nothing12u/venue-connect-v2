@@ -169,7 +169,7 @@ const App = {
     } else {
       authDraft[key] = authDraft[key] === value ? "" : value;
     }
-    renderSignup(authRole);
+    renderSignup(authRole, true);
   },
   authNext() {
     const flow = AUTH_FLOWS[authRole];
